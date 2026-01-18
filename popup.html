@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Playlist Planner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1>📺 Playlist Planner</h1>
+      <p class="subtitle">Plan your YouTube watching schedule</p>
+    </header>
+
+    <!-- Playlist Input Section -->
+    <section id="playlistSection" class="section">
+      <div class="input-group">
+        <label for="playlistUrlInput">Playlist URL</label>
+        <input 
+          type="text" 
+          id="playlistUrlInput" 
+          placeholder="https://www.youtube.com/playlist?list=..."
+          autocomplete="off"
+        >
+        <button id="fetchPlaylistBtn" class="btn btn-primary">Fetch Playlist</button>
+      </div>
+    </section>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Fetching playlist data...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="error-message hidden"></div>
+
+    <!-- Results Section (Hidden by default) -->
+    <section id="resultsSection" class="section hidden">
+      <h2>Playlist Summary</h2>
+      <div class="summary-card">
+        <div class="summary-item">
+          <span class="label">Title:</span>
+          <span id="playlistTitle" class="value">-</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Videos:</span>
+          <span id="videoCount" class="value">-</span>
+        </div>
+        <div class="summary-item">
+          <span class="label">Total Duration:</span>
+          <span id="totalDuration" class="value">-</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Planner Input Section (Hidden by default) -->
+    <section id="plannerInputSection" class="section hidden">
+      <div class="input-group">
+        <label for="dailyWatchTimeInput">Daily Watch Time (minutes)</label>
+        <input 
+          type="number" 
+          id="dailyWatchTimeInput" 
+          placeholder="30"
+          min="1"
+          autocomplete="off"
+        >
+        <button id="generatePlanBtn" class="btn btn-primary">Generate Plan</button>
+      </div>
+    </section>
+
+    <!-- Generated Plan Section (Hidden by default) -->
+    <section id="planSection" class="section hidden">
+      <div class="plan-header">
+        <h2>Your Watch Plan</h2>
+        <button id="resetBtn" class="btn btn-small">Reset</button>
+      </div>
+      <div id="planContainer" class="plan-container">
+        <!-- Dynamic day-wise checklist will be rendered here -->
+      </div>
+    </section>
+  </div>
+
+  <!-- External Scripts (Manifest V3 requires external JS) -->
+  <script src="utils/storage.js"></script>
+  <script src="utils/timeConverter.js"></script>
+  <script src="utils/api.js"></script>
+  <script src="utils/planner.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

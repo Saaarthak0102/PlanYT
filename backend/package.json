@@ -1,0 +1,25 @@
+{
+  "name": "youtube-playlist-planner-backend",
+  "version": "1.0.0",
+  "description": "Backend API proxy for YouTube Playlist Watch-Time Planner extension",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "youtube",
+    "api",
+    "proxy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "node-cache": "^5.1.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4"
+  }
+}
