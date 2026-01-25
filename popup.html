@@ -14,6 +14,14 @@
       <p class="subtitle">Plan your YouTube watching schedule</p>
     </header>
 
+    <!-- My Plans Section (Minimal) -->
+    <section id="plansSection" class="section section-compact hidden">
+      <h3 class="plans-title">My Plans</h3>
+      <div id="plansList" class="plans-list">
+        <!-- Plans rendered here -->
+      </div>
+    </section>
+
     <!-- Playlist Input Section -->
     <section id="playlistSection" class="section">
       <div class="input-group">
@@ -54,6 +62,17 @@
           <span id="totalDuration" class="value">-</span>
         </div>
       </div>
+
+      <!-- Progress Bar -->
+      <div id="progressSection" class="progress-section hidden">
+        <div class="progress-info">
+          <span id="progressLabel" class="progress-label">Day <span id="progressDay">1</span> of <span id="progressTotal">1</span></span>
+          <span id="progressPercent" class="progress-percent">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+        </div>
+      </div>
     </section>
 
     <!-- Planner Input Section (Hidden by default) -->
@@ -88,6 +107,7 @@
   <script src="utils/timeConverter.js"></script>
   <script src="utils/api.js"></script>
   <script src="utils/planner.js"></script>
+  <script src="utils/plans.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

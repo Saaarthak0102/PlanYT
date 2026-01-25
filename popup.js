@@ -7,6 +7,10 @@
 // DOM Element References
 // ========================================
 const elements = {
+  // Plans Section
+  plansSection: document.getElementById('plansSection'),
+  plansList: document.getElementById('plansList'),
+  
   // Playlist Section
   playlistUrlInput: document.getElementById('playlistUrlInput'),
   fetchPlaylistBtn: document.getElementById('fetchPlaylistBtn'),
@@ -20,6 +24,14 @@ const elements = {
   playlistTitle: document.getElementById('playlistTitle'),
   videoCount: document.getElementById('videoCount'),
   totalDuration: document.getElementById('totalDuration'),
+  
+  // Progress Bar
+  progressSection: document.getElementById('progressSection'),
+  progressBar: document.getElementById('progressBar'),
+  progressPercent: document.getElementById('progressPercent'),
+  progressLabel: document.getElementById('progressLabel'),
+  progressDay: document.getElementById('progressDay'),
+  progressTotal: document.getElementById('progressTotal'),
   
   // Planner Input
   plannerInputSection: document.getElementById('plannerInputSection'),
@@ -38,7 +50,9 @@ const elements = {
 let appState = {
   playlistData: null,
   videos: [],
-  plan: []
+  plan: [],
+  currentPlanId: null,
+  dailyWatchTime: 0
 };
 
 // ========================================
@@ -46,6 +60,9 @@ let appState = {
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Extension loaded');
+  
+  // Load plans and show them
+  await loadAndDisplayPlans();
   
   // Load saved plan if exists
   const savedPlanData = await getFromStorage('planData');
@@ -61,6 +78,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     renderPlan(appState.plan);
     showSection(elements.planSection);
+    
+    // Update progress bar if plan exists
+    if (savedPlanData.plan && savedPlanData.plan.length > 0) {
+      updateProgressBar(appState.currentPlanId);
+    }
     
     showMessage('Previous plan restored', 'success');
   }
@@ -80,6 +102,142 @@ function attachEventListeners() {
   
   // Reset
   elements.resetBtn.addEventListener('click', handleReset);
+}
+
+// ========================================
+// Plans Management Functions
+// ========================================
+async function loadAndDisplayPlans() {
+  try {
+    const plans = await getAllPlans();
+    appState.currentPlanId = (await getPlansData()).activePlanId;
+    
+    if (plans.length > 0) {
+      renderPlansList(plans, appState.currentPlanId);
+      showSection(elements.plansSection);
+    } else {
+      hideSection(elements.plansSection);
+    }
+  } catch (error) {
+    console.error('Error loading plans:', error);
+    hideSection(elements.plansSection);
+  }
+}
+
+function renderPlansList(plans, activePlanId) {
+  elements.plansList.innerHTML = '';
+  
+  plans.forEach(plan => {
+    const planItem = document.createElement('div');
+    planItem.className = `plan-item ${plan.id === activePlanId ? 'active' : ''}`;
+    planItem.dataset.planId = plan.id;
+    planItem.addEventListener('click', () => handlePlanSelect(plan.id, plan));
+    
+    const title = document.createElement('div');
+    title.className = 'plan-item-title';
+    title.textContent = plan.title;
+    
+    const subtext = document.createElement('div');
+    subtext.className = 'plan-item-subtext';
+    const currentDay = calculateCurrentDay(plan);
+    subtext.textContent = `Day ${currentDay} of ${plan.totalDays}`;
+    
+    planItem.appendChild(title);
+    planItem.appendChild(subtext);
+    elements.plansList.appendChild(planItem);
+  });
+}
+
+async function handlePlanSelect(planId, plan) {
+  try {
+    // Set as active
+    await setActivePlan(planId);
+    appState.currentPlanId = planId;
+    
+    // Update state
+    appState.playlistData = {
+      id: plan.playlistUrl || '',
+      title: plan.title,
+      videoCount: plan.totalVideos,
+      totalDuration: 0, // Not stored, but not needed for display
+      videos: []
+    };
+    appState.plan = plan.planData || [];
+    appState.dailyWatchTime = plan.dailyMinutes;
+    
+    // Display
+    displayPlaylistSummary(appState.playlistData);
+    showSection(elements.plannerInputSection);
+    elements.dailyWatchTimeInput.value = appState.dailyWatchTime;
+    renderPlan(appState.plan);
+    showSection(elements.planSection);
+    
+    // Update progress bar
+    updateProgressBar(planId);
+    
+    // Update plans list UI
+    document.querySelectorAll('.plan-item').forEach(item => {
+      item.classList.remove('active');
+      if (item.dataset.planId === planId) {
+        item.classList.add('active');
+      }
+    });
+  } catch (error) {
+    showError('Failed to load plan: ' + error.message);
+  }
+}
+
+function updateProgressBar(planId) {
+  if (!planId || !appState.plan || appState.plan.length === 0) {
+    hideSection(elements.progressSection);
+    return;
+  }
+  
+  try {
+    // Find the plan to get progress data
+    const plans = document.querySelectorAll('.plan-item');
+    let currentProgress = null;
+    
+    plans.forEach(item => {
+      if (item.dataset.planId === planId) {
+        // The progress is in appState (from the loaded plan)
+      }
+    });
+    
+    // Calculate progress from plan data
+    let completedVideos = 0;
+    appState.plan.forEach((dayData, dayIndex) => {
+      if (dayData.completed) {
+        completedVideos += dayData.videos.length;
+      }
+    });
+    
+    const totalVideos = appState.playlistData.videoCount || 0;
+    const progressPercent = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
+    
+    // Calculate current day
+    let currentDay = 1;
+    let videoCounter = 0;
+    for (let i = 0; i < appState.plan.length; i++) {
+      const videosInDay = appState.plan[i].videos.length;
+      if (!appState.plan[i].completed) {
+        currentDay = i + 1;
+        break;
+      }
+      videoCounter += videosInDay;
+    }
+    
+    // Update UI
+    elements.progressBar.style.width = progressPercent + '%';
+    elements.progressPercent.textContent = progressPercent + '%';
+    elements.progressDay.textContent = currentDay;
+    elements.progressTotal.textContent = appState.plan.length;
+    
+    showSection(elements.progressSection);
+  } catch (error) {
+    console.error('Error updating progress bar:', error);
+    hideSection(elements.progressSection);
+  }
 }
 
 // ========================================
@@ -172,6 +330,21 @@ async function handleGeneratePlan() {
       plan: appState.plan,
       dailyWatchTime: appState.dailyWatchTime
     });
+    
+    // Also save as a new plan in the plans system
+    try {
+      const newPlan = await createPlan(appState.playlistData, dailyTime, plan);
+      appState.currentPlanId = newPlan.id;
+      
+      // Reload and display plans
+      await loadAndDisplayPlans();
+      
+      // Update progress bar
+      updateProgressBar(newPlan.id);
+    } catch (planError) {
+      console.error('Error saving plan to plans system:', planError);
+      // Plan is still saved to planData, so continue
+    }
     
   } catch (error) {
     showError(`Error generating plan: ${error.message}`);
@@ -346,4 +519,7 @@ async function handleDayCompletion(dayIndex, completed) {
     plan: appState.plan,
     dailyWatchTime: appState.dailyWatchTime
   });
+  
+  // Update progress bar
+  updateProgressBar(appState.currentPlanId);
 }
