@@ -7,7 +7,7 @@
 // Backend API endpoints (production first, then localhost fallback)
 // Replace the production URL with your deployed backend domain
 const BACKEND_API_URLS = [
-  'https://your-backend.example.com/api/playlist-info',
+  'https://yt-extension-z6so.vercel.app/api/playlist-info',
   'http://localhost:3000/api/playlist-info'
 ];
 
