@@ -74,6 +74,23 @@ header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+header .header-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--yt-space-md);
+}
+
+header .header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--yt-radius-md);
+}
+
+header .header-text {
+  text-align: left;
+}
+
 header h1 {
   font-size: 20px;
   font-weight: 500;
