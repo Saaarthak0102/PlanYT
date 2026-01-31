@@ -104,8 +104,4 @@ Most playlists are abandoned because they are:
 
 Actively developed. Open to feedback and improvements.
 
----
 
-## License
-
-MIT License
