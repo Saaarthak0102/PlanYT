@@ -102,6 +102,7 @@ function renderUI() {
     if (appState.playlistData) {
       displayPlaylistSummary(appState.playlistData);
       showSection(elements.plannerInputSection);
+      scrollToPlannerInput();
     } else {
       hideSection(elements.resultsSection);
       hideSection(elements.plannerInputSection);
@@ -122,6 +123,31 @@ function renderUI() {
     hideSection(elements.resultsSection);
     hideSection(elements.progressSection);
     hideSection(elements.planSection);
+  }
+}
+
+function scrollToPlannerInput() {
+  try {
+    if (!elements.plannerInputSection || elements.plannerInputSection.classList.contains('hidden')) return;
+    elements.plannerInputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (error) {
+    console.error('Error autoscrolling to planner input:', error);
+  }
+}
+
+function scrollToFirstIncompleteDay() {
+  try {
+    if (!elements.planContainer) return;
+    const firstIncomplete = elements.planContainer.querySelector('.day-card:not(.completed)');
+    if (!firstIncomplete) return;
+
+    const containerRect = elements.planContainer.getBoundingClientRect();
+    const cardRect = firstIncomplete.getBoundingClientRect();
+    const offset = cardRect.top - containerRect.top + elements.planContainer.scrollTop - 8;
+
+    elements.planContainer.scrollTo({ top: offset, behavior: 'smooth' });
+  } catch (error) {
+    console.error('Error autoscrolling plan container:', error);
   }
 }
 
@@ -171,6 +197,21 @@ async function restoreActivePlan() {
   if (appState.currentPlanId) {
     const activePlan = appState.plansCache.find(plan => plan.id === appState.currentPlanId) || await getActivePlan();
     if (activePlan) {
+      // Merge legacy saved completion (planData) when it matches the active plan
+      try {
+        const legacyPlanData = await getFromStorage('planData');
+        const legacyHasPlan = legacyPlanData && Array.isArray(legacyPlanData.plan) && legacyPlanData.plan.length > 0;
+        const matchesByTitle = legacyPlanData?.playlistData?.title && legacyPlanData.playlistData.title === activePlan.title;
+        const matchesByPlaylistId = legacyPlanData?.playlistData?.id && legacyPlanData.playlistData.id === activePlan.playlistUrl;
+        const sameLength = Array.isArray(activePlan.planData) && legacyPlanData?.plan?.length === activePlan.planData.length;
+
+        if (legacyHasPlan && sameLength && (matchesByTitle || matchesByPlaylistId)) {
+          activePlan.planData = legacyPlanData.plan;
+          await updatePlanData(activePlan.id, legacyPlanData.plan);
+        }
+      } catch (error) {
+        console.error('Error syncing legacy plan data:', error);
+      }
       applyPlanToState(activePlan);
       return;
     }
@@ -213,6 +254,16 @@ function renderPlansList(plans, activePlanId) {
     planItem.className = `plan-item ${plan.id === activePlanId ? 'active' : ''}`;
     planItem.dataset.planId = plan.id;
     planItem.addEventListener('click', () => handlePlanSelect(plan.id, plan));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'plan-item-delete';
+    deleteBtn.type = 'button';
+    deleteBtn.setAttribute('aria-label', `Delete plan ${plan.title}`);
+    deleteBtn.textContent = '×';
+    deleteBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      handlePlanDelete(plan.id);
+    });
     
     const title = document.createElement('div');
     title.className = 'plan-item-title';
@@ -244,6 +295,7 @@ function renderPlansList(plans, activePlanId) {
     
     progressBarContainer.appendChild(progressBarFill);
     
+    planItem.appendChild(deleteBtn);
     planItem.appendChild(title);
     planItem.appendChild(subtext);
     planItem.appendChild(progressBarContainer);
@@ -265,6 +317,39 @@ async function handlePlanSelect(planId, plan) {
     renderUI();
   } catch (error) {
     showError('Failed to load plan: ' + error.message);
+  }
+}
+
+async function handlePlanDelete(planId) {
+  if (!planId) return;
+
+  const confirmDelete = confirm('Delete this plan? This cannot be undone.');
+  if (!confirmDelete) return;
+
+  try {
+    const result = await deletePlan(planId);
+
+    if (appState.currentPlanId === planId) {
+      appState.currentPlanId = result.activePlanId;
+
+      if (appState.currentPlanId) {
+        const nextPlan = appState.plansCache.find(p => p.id === appState.currentPlanId) || await getActivePlan();
+        if (nextPlan) {
+          applyPlanToState(nextPlan);
+        } else {
+          appState.plan = [];
+          appState.playlistData = null;
+        }
+      } else {
+        appState.plan = [];
+        appState.playlistData = null;
+      }
+    }
+
+    await loadAndDisplayPlans();
+    renderUI();
+  } catch (error) {
+    showError('Failed to delete plan: ' + error.message);
   }
 }
 
@@ -348,6 +433,7 @@ async function handleFetchPlaylist() {
     };
     
     renderUI();
+    scrollToPlannerInput();
     showLoading(false);
     
   } catch (error) {
@@ -403,6 +489,13 @@ async function handleGeneratePlan() {
       const newPlan = await createPlan(appState.playlistData, dailyTime, plan);
       appState.currentPlanId = newPlan.id;
       
+      // Ensure any immediate completions are synced to the new plan
+      try {
+        await updatePlanData(appState.currentPlanId, appState.plan);
+      } catch (syncError) {
+        console.error('Error syncing new plan data:', syncError);
+      }
+
       // Reload and display plans
       await loadAndDisplayPlans();
       
@@ -500,6 +593,8 @@ function renderPlan(plan) {
     const dayCard = createDayCard(dayData, index);
     elements.planContainer.appendChild(dayCard);
   });
+
+  setTimeout(scrollToFirstIncompleteDay, 0);
 }
 
 function createDayCard(dayData, index) {
@@ -589,7 +684,20 @@ async function handleDayCompletion(dayIndex, completed) {
     plan: appState.plan,
     dailyWatchTime: appState.dailyWatchTime
   });
+
+  // Persist to plans system and refresh list
+  if (appState.currentPlanId) {
+    try {
+      await updatePlanData(appState.currentPlanId, appState.plan);
+      await loadAndDisplayPlans();
+    } catch (error) {
+      console.error('Error updating plan progress:', error);
+    }
+  }
   
   // Update progress bar
   updateProgressBar(appState.currentPlanId);
+  
+  // Auto-scroll to next incomplete day
+  setTimeout(scrollToFirstIncompleteDay, 100);
 }

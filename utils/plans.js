@@ -112,6 +112,25 @@ async function getAllPlans() {
 }
 
 /**
+ * Delete a plan by ID
+ */
+async function deletePlan(planId) {
+  const plansData = await getPlansData();
+  const existingIndex = plansData.plans.findIndex(p => p.id === planId);
+
+  if (existingIndex === -1) return { deleted: false, activePlanId: plansData.activePlanId };
+
+  plansData.plans.splice(existingIndex, 1);
+
+  if (plansData.activePlanId === planId) {
+    plansData.activePlanId = plansData.plans.length > 0 ? plansData.plans[0].id : null;
+  }
+
+  await savePlansData(plansData);
+  return { deleted: true, activePlanId: plansData.activePlanId };
+}
+
+/**
  * Update plan progress
  */
 async function updatePlanProgress(planId, progressData) {
@@ -150,4 +169,46 @@ function calculateCurrentDay(plan) {
     }
   }
   return plan.planData.length;
+}
+
+/**
+ * Count completed videos based on planData
+ */
+function countCompletedVideos(planData) {
+  if (!Array.isArray(planData)) return 0;
+  let completed = 0;
+  planData.forEach(dayData => {
+    if (dayData.completed) {
+      completed += Array.isArray(dayData.videos) ? dayData.videos.length : 0;
+    }
+  });
+  return completed;
+}
+
+/**
+ * Update stored plan data (including progress derived from completion)
+ */
+async function updatePlanData(planId, planData) {
+  const plansData = await getPlansData();
+  const plan = plansData.plans.find(p => p.id === planId);
+
+  if (!plan) return false;
+
+  plan.planData = planData;
+
+  const completedVideos = countCompletedVideos(planData);
+  const tempPlan = {
+    ...plan,
+    planData,
+    progress: { lastWatchedIndex: completedVideos }
+  };
+  const currentDay = calculateCurrentDay(tempPlan);
+
+  plan.progress = {
+    currentDay,
+    lastWatchedIndex: completedVideos
+  };
+
+  await savePlansData(plansData);
+  return true;
 }

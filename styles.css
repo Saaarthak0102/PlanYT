@@ -91,6 +91,24 @@ header .header-text {
   text-align: left;
 }
 
+.github-link {
+  margin-left: auto;
+  color: var(--yt-text-secondary);
+  transition: color var(--yt-transition);
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.github-link:hover {
+  color: var(--yt-text-primary);
+}
+
+.github-link svg {
+  width: 20px;
+  height: 20px;
+}
+
 header h1 {
   font-size: 20px;
   font-weight: 500;
@@ -491,6 +509,7 @@ header .subtitle {
   border-radius: var(--yt-radius-md);
   cursor: pointer;
   transition: all var(--yt-transition);
+  position: relative;
 }
 
 .plan-item:hover {
@@ -533,6 +552,37 @@ header .subtitle {
   background-color: var(--yt-accent);
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 2px;
+}
+
+.plan-item-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--yt-radius-full);
+  border: 1px solid rgba(255, 68, 68, 0.5);
+  background-color: rgba(255, 68, 68, 0.15);
+  color: var(--yt-error);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--yt-transition);
+}
+
+.plan-item-delete:hover {
+  background-color: rgba(255, 68, 68, 0.35);
+  border-color: rgba(255, 68, 68, 0.85);
+}
+
+.plan-item-delete:focus-visible {
+  outline: 2px solid var(--yt-error);
+  outline-offset: 2px;
 }
 
 /* ========================================
@@ -600,4 +650,31 @@ html {
 ::selection {
   background-color: rgba(255, 0, 0, 0.3);
   color: var(--yt-text-primary);
+}
+/* ========================================
+   Footer Credit
+   ======================================== */
+.footer {
+  text-align: center;
+  padding: var(--yt-space-lg) 0;
+  margin-top: var(--yt-space-xl);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer p {
+  font-size: 12px;
+  color: var(--yt-text-tertiary);
+  margin: 0;
+}
+
+.footer a {
+  color: var(--yt-accent);
+  text-decoration: none;
+  transition: color var(--yt-transition);
+  font-weight: 500;
+}
+
+.footer a:hover {
+  color: var(--yt-accent-hover);
+  text-decoration: underline;
 }
