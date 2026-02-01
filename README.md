@@ -40,7 +40,12 @@ Most playlists are abandoned because they are:
 - **Partial Video Splitting** – Long videos are split across days  
 - **Progress Tracking** – Visual progress bar with completion percentage  
 - **Persistent Storage** – Plans and progress saved across sessions  
-- **One-click Delete** – Instantly remove any plan  
+- **One-click Delete** – Instantly remove any plan
+  
+## Privacy
+PlanYT does not collect, store, or transmit any personal data.
+All playlist plans and progress are stored locally in the user's browser.
+No analytics, tracking, or external servers are used.
 
 ### UX Enhancements
 
