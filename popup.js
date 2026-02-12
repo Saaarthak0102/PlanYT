@@ -162,6 +162,7 @@ function applyPlanToState(plan) {
   
   appState.playlistData = {
     id: plan.playlistUrl || '',
+    url: plan.playlistUrl || '',
     title: plan.title,
     videoCount: plan.totalVideos,
     totalDuration: totalDuration,
@@ -235,6 +236,7 @@ async function restoreActivePlan() {
       {
         id: 'legacy-plan',
         title: savedPlanData.playlistData?.title || 'Saved Plan',
+        playlistUrl: savedPlanData.playlistData?.url || savedPlanData.playlistData?.id || '',
         totalVideos: savedPlanData.playlistData?.videoCount || 0,
         totalDays: savedPlanData.plan.length,
         dailyMinutes: savedPlanData.dailyWatchTime,
@@ -273,6 +275,7 @@ function renderPlansList(plans, activePlanId) {
       handlePlanDelete(plan.id);
     });
     
+    // Plain text title (no redirect)
     const title = document.createElement('div');
     title.className = 'plan-item-title';
     title.textContent = plan.title;
@@ -431,9 +434,13 @@ async function handleFetchPlaylist() {
     // Backend already provides durationMinutes, so calculate total
     const totalDurationMinutes = playlistData.videos.reduce((sum, video) => sum + video.durationMinutes, 0);
     
+    // Construct the full playlist URL
+    const playlistUrl = `https://www.youtube.com/playlist?list=${playlistId}`;
+    
     // Store in app state
     appState.playlistData = {
       id: playlistId,
+      url: playlistUrl,
       title: playlistData.title,
       videoCount: playlistData.videoCount,
       totalDuration: totalDurationMinutes,
@@ -578,8 +585,43 @@ function hideSection(section) {
 // Data Display Functions
 // ========================================
 function displayPlaylistSummary(data) {
-  // Populate summary fields
-  elements.playlistTitle.textContent = data.title;
+  // Clear previous content
+  elements.playlistTitle.innerHTML = '';
+  
+  // Check if we have a playlist URL to make it clickable
+  if (data && data.url) {
+    // Create clickable link (no icon)
+    const titleLink = document.createElement('a');
+    titleLink.href = '#';
+    titleLink.className = 'playlist-title-link';
+    titleLink.textContent = data.title;
+    titleLink.setAttribute('aria-label', `Open ${data.title} on YouTube`);
+    titleLink.setAttribute('title', 'Click to open playlist on YouTube');
+    
+    // Add click handler using chrome.tabs.create for extension compatibility
+    titleLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      if (data.url) {
+        chrome.tabs.create({ url: data.url });
+      }
+    });
+    
+    // Add keyboard accessibility
+    titleLink.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        if (data.url) {
+          chrome.tabs.create({ url: data.url });
+        }
+      }
+    });
+    
+    elements.playlistTitle.appendChild(titleLink);
+  } else {
+    // Fallback to plain text if no URL
+    elements.playlistTitle.textContent = data.title;
+  }
+  
   elements.videoCount.textContent = data.videoCount;
   elements.totalDuration.textContent = formatMinutes(data.totalDuration);
   

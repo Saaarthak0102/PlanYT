@@ -1,0 +1,666 @@
+/* ========================================
+   PlanYT Overlay Styles
+   Scoped to .planyt-container to avoid YouTube conflicts
+   ======================================== */
+
+/* Container-scoped CSS variables */
+.planyt-container {
+  /* YouTube Dark Theme Colors */
+  --planyt-bg-primary: #0f0f0f;
+  --planyt-bg-secondary: #212121;
+  --planyt-bg-tertiary: #272727;
+  --planyt-bg-hover: #3f3f3f;
+  
+  --planyt-text-primary: #ffffff;
+  --planyt-text-secondary: #e6e6e6;
+  --planyt-text-tertiary: #bfbfbf;
+  
+  --planyt-brand-red: #ff0000;
+  --planyt-brand-red-hover: #cc0000;
+  --planyt-accent: #ff0000;
+  --planyt-accent-hover: #cc0000;
+  
+  --planyt-success: #0fb556;
+  --planyt-error: #ff4444;
+  --planyt-warning: #ff9800;
+  
+  --planyt-space-xs: 4px;
+  --planyt-space-sm: 8px;
+  --planyt-space-md: 12px;
+  --planyt-space-lg: 16px;
+  --planyt-space-xl: 24px;
+  
+  --planyt-radius-sm: 2px;
+  --planyt-radius-md: 8px;
+  --planyt-radius-lg: 12px;
+  --planyt-radius-full: 999px;
+  
+  --planyt-transition: 0.1s cubic-bezier(0.05, 0, 0, 1);
+
+  /* Base container styles */
+  box-sizing: border-box;
+  width: 420px;
+  height: 600px;
+  font-family: "Roboto", "Arial", sans-serif;
+  background-color: var(--planyt-bg-primary);
+  color: var(--planyt-text-primary);
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-y: auto;
+  -webkit-font-smoothing: antialiased;
+  padding: var(--planyt-space-lg);
+}
+
+.planyt-container * {
+  box-sizing: border-box;
+}
+
+/* ========================================
+   Header
+   ======================================== */
+.planyt-header {
+  text-align: center;
+  margin-bottom: var(--planyt-space-xl);
+  padding-bottom: var(--planyt-space-lg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.planyt-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--planyt-space-md);
+}
+
+.planyt-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--planyt-radius-md);
+}
+
+.planyt-header-text {
+  text-align: left;
+}
+
+.planyt-header h1 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0 0 var(--planyt-space-xs) 0;
+  color: var(--planyt-text-primary);
+  letter-spacing: -0.2px;
+}
+
+.planyt-subtitle {
+  font-size: 12px;
+  color: var(--planyt-text-secondary);
+  font-weight: 400;
+  margin: 0;
+}
+
+.planyt-github-link {
+  margin-left: auto;
+  color: var(--planyt-text-secondary);
+  transition: color var(--planyt-transition);
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.planyt-github-link:hover {
+  color: var(--planyt-text-primary);
+}
+
+/* ========================================
+   Sections
+   ======================================== */
+.planyt-section {
+  margin-bottom: var(--planyt-space-md);
+  padding: var(--planyt-space-lg);
+  background-color: var(--planyt-bg-secondary);
+  border-radius: var(--planyt-radius-md);
+  border: none;
+}
+
+.planyt-section-compact {
+  padding: var(--planyt-space-md);
+  margin-bottom: var(--planyt-space-sm);
+}
+
+.planyt-section h2 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 var(--planyt-space-md) 0;
+  color: var(--planyt-text-primary);
+  letter-spacing: -0.1px;
+}
+
+.planyt-hidden {
+  display: none !important;
+}
+
+/* ========================================
+   Input Groups
+   ======================================== */
+.planyt-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--planyt-space-sm);
+}
+
+.planyt-input-group label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--planyt-text-secondary);
+  margin: 0;
+}
+
+.planyt-input-group input {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 0, 0, 0.35);
+  border-radius: var(--planyt-radius-sm);
+  color: var(--planyt-text-primary);
+  font-size: 14px;
+  font-family: "Roboto", sans-serif;
+  transition: border-color var(--planyt-transition), background-color var(--planyt-transition);
+}
+
+.planyt-input-group input:focus {
+  outline: none;
+  border-color: var(--planyt-accent);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.planyt-input-group input::placeholder {
+  color: var(--planyt-text-tertiary);
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+.planyt-btn {
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--planyt-radius-full);
+  cursor: pointer;
+  transition: all var(--planyt-transition);
+  text-align: center;
+  font-family: "Roboto", sans-serif;
+  letter-spacing: 0.2px;
+}
+
+.planyt-btn-primary {
+  background-color: var(--planyt-accent);
+  color: #ffffff;
+}
+
+.planyt-btn-primary:hover {
+  background-color: var(--planyt-accent-hover);
+}
+
+.planyt-btn-primary:active {
+  opacity: 0.9;
+}
+
+.planyt-btn-primary:disabled {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--planyt-text-tertiary);
+  cursor: not-allowed;
+}
+
+.planyt-btn-secondary {
+  background-color: var(--planyt-accent);
+  color: #ffffff;
+  border: 1px solid var(--planyt-accent);
+}
+
+.planyt-btn-secondary:hover {
+  background-color: var(--planyt-accent-hover);
+}
+
+.planyt-btn-small {
+  width: auto;
+  padding: 6px 14px;
+  font-size: 12px;
+  background-color: rgba(80, 0, 0, 0.45);
+  color: var(--planyt-text-primary);
+  border-radius: var(--planyt-radius-full);
+}
+
+.planyt-btn-small:hover {
+  background-color: rgba(80, 0, 0, 0.6);
+}
+
+/* ========================================
+   Loading & Error
+   ======================================== */
+.planyt-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--planyt-space-xl);
+  gap: var(--planyt-space-md);
+}
+
+.planyt-loading p {
+  color: var(--planyt-text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  margin: 0;
+}
+
+.planyt-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: var(--planyt-accent);
+  border-radius: 50%;
+  animation: planyt-spin 0.7s linear infinite;
+}
+
+@keyframes planyt-spin {
+  to { transform: rotate(360deg); }
+}
+
+.planyt-error-message {
+  padding: var(--planyt-space-md);
+  background-color: rgba(255, 68, 68, 0.1);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  border-radius: var(--planyt-radius-sm);
+  color: var(--planyt-error);
+  font-size: 13px;
+  margin-bottom: var(--planyt-space-md);
+}
+
+/* ========================================
+   My Plans
+   ======================================== */
+.planyt-plans-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--planyt-text-primary);
+  text-transform: none;
+  letter-spacing: 0.2px;
+  margin: 0 0 var(--planyt-space-md) 0;
+  display: block;
+}
+
+.planyt-plans-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--planyt-space-sm);
+}
+
+.planyt-plans-footer {
+  margin-top: var(--planyt-space-sm);
+  margin-bottom: var(--planyt-space-lg);
+}
+
+.planyt-plan-item {
+  padding: var(--planyt-space-md) var(--planyt-space-lg);
+  background-color: rgba(80, 0, 0, 0.2);
+  border: 1px solid rgba(80, 0, 0, 0.4);
+  border-radius: var(--planyt-radius-md);
+  cursor: pointer;
+  transition: all var(--planyt-transition);
+  position: relative;
+}
+
+.planyt-plan-item:hover {
+  background-color: rgba(80, 0, 0, 0.3);
+  border-color: rgba(80, 0, 0, 0.55);
+}
+
+.planyt-plan-item.planyt-active {
+  border-color: var(--planyt-accent);
+  background-color: rgba(255, 0, 0, 0.1);
+}
+
+.planyt-plan-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--planyt-text-primary);
+  margin-bottom: var(--planyt-space-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.planyt-plan-item-title.planyt-clickable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color var(--planyt-transition), text-decoration var(--planyt-transition);
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--planyt-radius-sm);
+  max-width: fit-content;
+}
+
+.planyt-plan-item-title.planyt-clickable:hover {
+  color: var(--planyt-text-secondary);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.3);
+  text-underline-offset: 2px;
+}
+
+.planyt-external-link-icon {
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity var(--planyt-transition);
+  margin-left: 2px;
+  color: var(--planyt-text-tertiary);
+}
+
+.planyt-plan-item-title.planyt-clickable:hover .planyt-external-link-icon {
+  opacity: 1;
+}
+
+.planyt-plan-item-subtext {
+  font-size: 11px;
+  color: var(--planyt-text-tertiary);
+  margin-bottom: var(--planyt-space-sm);
+}
+
+.planyt-plan-item-progress-bar {
+  width: 100%;
+  height: 3px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: var(--planyt-space-sm);
+}
+
+.planyt-plan-item-progress-fill {
+  height: 100%;
+  background-color: var(--planyt-accent);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+}
+
+.planyt-plan-item-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--planyt-radius-full);
+  border: 1px solid rgba(255, 68, 68, 0.5);
+  background-color: rgba(255, 68, 68, 0.15);
+  color: var(--planyt-error);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--planyt-transition);
+}
+
+.planyt-plan-item-delete:hover {
+  background-color: rgba(255, 68, 68, 0.35);
+  border-color: rgba(255, 68, 68, 0.85);
+}
+
+.planyt-plan-item-empty {
+  padding: var(--planyt-space-lg);
+  text-align: center;
+  color: var(--planyt-text-tertiary);
+  font-size: 13px;
+  cursor: default;
+}
+
+/* ========================================
+   Summary Card
+   ======================================== */
+.planyt-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--planyt-space-sm);
+}
+
+.planyt-summary-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--planyt-space-md);
+  background-color: rgba(80, 0, 0, 0.2);
+  border: 1px solid rgba(80, 0, 0, 0.4);
+  border-radius: var(--planyt-radius-md);
+  transition: all var(--planyt-transition);
+}
+
+.planyt-summary-item:hover {
+  background-color: rgba(80, 0, 0, 0.3);
+  border-color: rgba(80, 0, 0, 0.55);
+}
+
+.planyt-label {
+  font-weight: 400;
+  color: var(--planyt-text-secondary);
+  font-size: 13px;
+}
+
+.planyt-value {
+  font-weight: 500;
+  color: var(--planyt-text-primary);
+  font-size: 13px;
+}
+
+/* ========================================
+   Progress
+   ======================================== */
+.planyt-progress-section {
+  margin-top: var(--planyt-space-lg);
+  padding-top: var(--planyt-space-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.planyt-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--planyt-space-sm);
+  font-size: 12px;
+}
+
+.planyt-progress-label {
+  color: var(--planyt-text-secondary);
+  font-weight: 400;
+}
+
+.planyt-progress-percent {
+  color: var(--planyt-accent);
+  font-weight: 500;
+}
+
+.planyt-progress-bar-container {
+  width: 100%;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.planyt-progress-bar {
+  height: 100%;
+  background-color: var(--planyt-accent);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+}
+
+/* ========================================
+   Plan Display
+   ======================================== */
+.planyt-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--planyt-space-md);
+}
+
+.planyt-plan-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--planyt-space-sm);
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: var(--planyt-space-xs);
+}
+
+.planyt-plan-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.planyt-plan-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.planyt-plan-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  border: 2px solid var(--planyt-bg-secondary);
+}
+
+.planyt-plan-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================
+   Day Cards
+   ======================================== */
+.planyt-day-card {
+  padding: var(--planyt-space-lg);
+  background-color: rgba(80, 0, 0, 0.2);
+  border-radius: var(--planyt-radius-md);
+  border: 1px solid rgba(80, 0, 0, 0.4);
+  transition: all var(--planyt-transition);
+}
+
+.planyt-day-card:hover {
+  background-color: rgba(80, 0, 0, 0.3);
+  border-color: rgba(80, 0, 0, 0.55);
+}
+
+.planyt-day-card.planyt-completed {
+  opacity: 0.6;
+  border-color: var(--planyt-accent);
+}
+
+.planyt-day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--planyt-space-md);
+}
+
+.planyt-day-title {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--planyt-text-primary);
+}
+
+.planyt-day-duration {
+  font-size: 12px;
+  color: var(--planyt-text-tertiary);
+  background-color: rgba(80, 0, 0, 0.5);
+  padding: 2px 8px;
+  border-radius: var(--planyt-radius-sm);
+}
+
+.planyt-video-list {
+  list-style: none;
+  margin: var(--planyt-space-sm) 0;
+  padding-left: 0;
+}
+
+.planyt-video-item {
+  font-size: 13px;
+  color: var(--planyt-text-secondary);
+  margin-bottom: var(--planyt-space-sm);
+  line-height: 1.5;
+  padding-left: var(--planyt-space-lg);
+  position: relative;
+}
+
+.planyt-video-item::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 7px;
+  width: 4px;
+  height: 4px;
+  background-color: var(--planyt-text-tertiary);
+  border-radius: 50%;
+}
+
+.planyt-checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: var(--planyt-space-sm);
+  margin-top: var(--planyt-space-md);
+  padding-top: var(--planyt-space-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.planyt-checkbox-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--planyt-accent);
+  border-radius: var(--planyt-radius-sm);
+}
+
+.planyt-checkbox-container label {
+  font-size: 13px;
+  color: var(--planyt-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  margin: 0;
+}
+
+/* ========================================
+   Footer
+   ======================================== */
+.planyt-footer {
+  margin-top: var(--planyt-space-xl);
+  padding-top: var(--planyt-space-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.planyt-footer p {
+  font-size: 11px;
+  color: var(--planyt-text-tertiary);
+  margin: 0;
+}
+
+.planyt-footer a {
+  color: var(--planyt-accent);
+  text-decoration: none;
+  transition: color var(--planyt-transition);
+}
+
+.planyt-footer a:hover {
+  color: var(--planyt-accent-hover);
+}
+
+/* ========================================
+   Reduced Motion
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  .planyt-container *,
+  .planyt-container *::before,
+  .planyt-container *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -348,6 +348,27 @@ header .subtitle {
   font-size: 13px;
 }
 
+/* Playlist Title Link Styles */
+.playlist-title-link {
+  color: var(--yt-text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--yt-transition);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.playlist-title-link:hover {
+  color: var(--yt-accent);
+  text-decoration: underline;
+}
+
+.playlist-title-link:focus {
+  outline: 2px solid var(--yt-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* ========================================
    Plan Header & Container
    ======================================== */
