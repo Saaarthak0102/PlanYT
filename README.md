@@ -11,7 +11,7 @@
 
 ---
 
-# PlanYT — v1.2  
+# PlanYT - v1.2.0
 Native Integration & Flexible Planning Update
 
 PlanYT is a lightweight Chrome extension that transforms overwhelming YouTube playlists into structured, realistic daily plans — directly inside YouTube.
