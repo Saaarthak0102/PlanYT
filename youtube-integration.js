@@ -13,7 +13,7 @@
   const CONFIG = {
     ICON_ID: 'planyt-toolbar-icon',
     HEADER_SELECTOR: 'ytd-masthead #end',
-    CHECK_INTERVAL: 100,
+    CHECK_INTERVAL: 250,
     MAX_WAIT_TIME: 10000
   };
 
@@ -76,7 +76,7 @@
     `;
 
     const icon = document.createElement('img');
-    icon.src = chrome.runtime.getURL('assets/icon.png');
+    icon.src = chrome.runtime.getURL('assets/icon32.png');
     icon.alt = 'PlanYT';
     icon.style.cssText = `
       width: 24px;

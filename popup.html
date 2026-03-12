@@ -9,9 +9,9 @@
 <body>
   <div class="container">
     <!-- Header -->
-    <header>
+    <header id="mainHeader">
       <div class="header-content">
-        <img src="assets/icon.png" alt="PlanYT" class="header-icon">
+        <img src="../assets/icon128.png" alt="PlanYT" class="header-icon">
         <div class="header-text">
           <h1>PlanYT</h1>
           <p class="subtitle">Your Youtube, planned</p>
@@ -32,7 +32,7 @@
       </div>
     </section>
 
-    <div class="plans-footer">
+    <div id="plansFooter" class="plans-footer">
       <button id="addPlanBtn" class="btn btn-secondary">Add New Plan</button>
     </div>
 
@@ -58,6 +58,16 @@
 
     <!-- Error Message -->
     <div id="errorMessage" class="error-message hidden"></div>
+
+    <!-- Success Screen -->
+    <section id="successSection" class="success-screen hidden">
+      <div class="success-content">
+        <h2 class="success-title">Plan Generated Successfully</h2>
+        <div class="success-accent" aria-hidden="true"></div>
+        <p class="success-subtext">Your plan is now active.</p>
+        <p class="success-meta">Closing automatically...</p>
+      </div>
+    </section>
 
     <!-- Results Section (Hidden by default) -->
     <section id="resultsSection" class="section hidden">
@@ -116,17 +126,17 @@
     </section>
 
     <!-- Footer Credit -->
-    <footer class="footer">
+    <footer id="mainFooter" class="footer">
       <p>Made with ❤️ by <a href="https://github.com/Saaarthak0102" target="_blank">Saaarthak0102</a></p>
     </footer>
   </div>
 
   <!-- External Scripts (Manifest V3 requires external JS) -->
-  <script src="utils/storage.js"></script>
-  <script src="utils/timeConverter.js"></script>
-  <script src="utils/api.js"></script>
-  <script src="utils/planner.js"></script>
-  <script src="utils/plans.js"></script>
+  <script src="../core/storage.js"></script>
+  <script src="../core/timeConverter.js"></script>
+  <script src="../core/api.js"></script>
+  <script src="../core/planner.js"></script>
+  <script src="../core/plans.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

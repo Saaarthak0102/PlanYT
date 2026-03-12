@@ -18,6 +18,48 @@ function generatePlanId() {
 }
 
 /**
+ * Derive progress from planData (single source of truth)
+ * @param {Array} planData
+ * @returns {{percent:number,completedDays:number,totalDays:number,currentDay:number,lastWatchedIndex:number}}
+ */
+function deriveProgressFromPlanData(planData) {
+  if (!Array.isArray(planData) || planData.length === 0) {
+    return {
+      percent: 0,
+      completedDays: 0,
+      totalDays: 0,
+      currentDay: 1,
+      lastWatchedIndex: 0
+    };
+  }
+
+  let completedVideos = 0;
+  let completedDays = 0;
+  let totalVideos = 0;
+  const totalDays = planData.length;
+
+  planData.forEach(dayData => {
+    const dayVideosCount = Array.isArray(dayData.videos) ? dayData.videos.length : 0;
+    totalVideos += dayVideosCount;
+    if (dayData.completed) {
+      completedDays += 1;
+      completedVideos += dayVideosCount;
+    }
+  });
+
+  const currentDay = calculateCurrentDayFromPlanData(planData, completedVideos);
+  const percent = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
+
+  return {
+    percent,
+    completedDays,
+    totalDays,
+    currentDay,
+    lastWatchedIndex: completedVideos
+  };
+}
+
+/**
  * Initialize or get plans data from storage
  */
 async function getPlansData() {
@@ -61,20 +103,15 @@ async function createPlan(playlistData, dailyWatchTime, plan) {
     videosPerDay: plan[0]?.videos?.length || 0,
     createdAt: Date.now(),
     totalDays: totalDays,
-    progress: {
-      currentDay: 1,
-      lastWatchedIndex: 0
-    },
+    progress: deriveProgressFromPlanData(plan),
     // Store the plan data for display
     planData: plan
   };
   
   plansData.plans.push(newPlan);
   
-  // Set as active plan if it's the first one
-  if (!plansData.activePlanId) {
-    plansData.activePlanId = newPlan.id;
-  }
+  // Set as active plan for deterministic creation flow
+  plansData.activePlanId = newPlan.id;
   
   await savePlansData(plansData);
   return newPlan;
@@ -113,21 +150,58 @@ async function getAllPlans() {
 
 /**
  * Delete a plan by ID
+ * Ensures activePlanId is reset if the deleted plan was active
+ * Returns updated activePlanId after deletion
  */
 async function deletePlan(planId) {
+  // Step 1: Fetch current state from storage
   const plansData = await getPlansData();
-  const existingIndex = plansData.plans.findIndex(p => p.id === planId);
+  const planIndex = plansData.plans.findIndex(p => p.id === planId);
 
-  if (existingIndex === -1) return { deleted: false, activePlanId: plansData.activePlanId };
+  // Step 2: Validate plan exists
+  if (planIndex === -1) {
+    return { deleted: false, activePlanId: plansData.activePlanId };
+  }
 
-  plansData.plans.splice(existingIndex, 1);
+  // Step 3: Remove plan from array
+  plansData.plans.splice(planIndex, 1);
 
+  // Step 4: Reset activePlanId if it pointed to deleted plan
   if (plansData.activePlanId === planId) {
     plansData.activePlanId = plansData.plans.length > 0 ? plansData.plans[0].id : null;
   }
 
+  // Step 5: Persist updated state to chrome.storage.local
   await savePlansData(plansData);
+
   return { deleted: true, activePlanId: plansData.activePlanId };
+}
+
+/**
+ * Validate and fix plans state on load
+ * Ensures activePlanId points to an existing plan
+ * If activePlanId references a deleted plan, resets it to null
+ */
+async function validateAndFixPlansState() {
+  try {
+    const plansData = await getPlansData();
+    
+    // Check if activePlanId exists in plans array
+    const planExists = plansData.activePlanId && 
+                       plansData.plans.some(p => p.id === plansData.activePlanId);
+    
+    // If activePlanId doesn't exist in plans, reset it
+    if (plansData.activePlanId && !planExists) {
+      console.warn(`Stale activePlanId detected: ${plansData.activePlanId}. Resetting to null.`);
+      plansData.activePlanId = null;
+      await savePlansData(plansData);
+    }
+    
+    return plansData;
+  } catch (error) {
+    console.error('Error validating plans state:', error);
+    return { plans: [], activePlanId: null };
+  }
 }
 
 /**
@@ -138,7 +212,10 @@ async function updatePlanProgress(planId, progressData) {
   const plan = plansData.plans.find(p => p.id === planId);
   
   if (plan) {
-    plan.progress = progressData;
+    if (progressData) {
+      console.warn('Deprecated: updatePlanProgress ignores stored progress and derives from planData.');
+    }
+    plan.progress = deriveProgressFromPlanData(plan.planData);
     await savePlansData(plansData);
     return true;
   }
@@ -150,7 +227,8 @@ async function updatePlanProgress(planId, progressData) {
  */
 function calculateProgressPercentage(plan) {
   if (!plan || plan.totalVideos === 0) return 0;
-  return Math.round((plan.progress.lastWatchedIndex / plan.totalVideos) * 100);
+  const derived = deriveProgressFromPlanData(plan.planData);
+  return derived.percent;
 }
 
 /**
@@ -158,31 +236,29 @@ function calculateProgressPercentage(plan) {
  */
 function calculateCurrentDay(plan) {
   if (!plan || !plan.planData) return 1;
-  
+  const derived = deriveProgressFromPlanData(plan.planData);
+  return derived.currentDay;
+}
+
+/**
+ * Calculate current day purely from planData and completed count
+ * @param {Array} planData
+ * @param {number} completedVideos
+ * @returns {number}
+ */
+function calculateCurrentDayFromPlanData(planData, completedVideos) {
+  if (!Array.isArray(planData) || planData.length === 0) return 1;
+
   let watchedVideos = 0;
-  for (let dayIndex = 0; dayIndex < plan.planData.length; dayIndex++) {
-    const dayVideos = plan.planData[dayIndex].videos.length;
-    if (watchedVideos + dayVideos <= plan.progress.lastWatchedIndex) {
+  for (let dayIndex = 0; dayIndex < planData.length; dayIndex++) {
+    const dayVideos = Array.isArray(planData[dayIndex].videos) ? planData[dayIndex].videos.length : 0;
+    if (watchedVideos + dayVideos <= completedVideos) {
       watchedVideos += dayVideos;
     } else {
       return dayIndex + 1;
     }
   }
-  return plan.planData.length;
-}
-
-/**
- * Count completed videos based on planData
- */
-function countCompletedVideos(planData) {
-  if (!Array.isArray(planData)) return 0;
-  let completed = 0;
-  planData.forEach(dayData => {
-    if (dayData.completed) {
-      completed += Array.isArray(dayData.videos) ? dayData.videos.length : 0;
-    }
-  });
-  return completed;
+  return planData.length;
 }
 
 /**
@@ -195,19 +271,7 @@ async function updatePlanData(planId, planData) {
   if (!plan) return false;
 
   plan.planData = planData;
-
-  const completedVideos = countCompletedVideos(planData);
-  const tempPlan = {
-    ...plan,
-    planData,
-    progress: { lastWatchedIndex: completedVideos }
-  };
-  const currentDay = calculateCurrentDay(tempPlan);
-
-  plan.progress = {
-    currentDay,
-    lastWatchedIndex: completedVideos
-  };
+  plan.progress = deriveProgressFromPlanData(planData);
 
   await savePlansData(plansData);
   return true;

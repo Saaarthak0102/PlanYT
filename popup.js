@@ -20,6 +20,10 @@ const elements = {
   // UI States
   loadingIndicator: document.getElementById('loadingIndicator'),
   errorMessage: document.getElementById('errorMessage'),
+  successSection: document.getElementById('successSection'),
+  mainHeader: document.getElementById('mainHeader'),
+  mainFooter: document.getElementById('mainFooter'),
+  plansFooter: document.getElementById('plansFooter'),
   
   // Results Section
   resultsSection: document.getElementById('resultsSection'),
@@ -55,6 +59,7 @@ let appState = {
   dailyWatchTime: 0,
   isAddingNewPlan: false,
   isFetching: false,
+  isUpdatingCompletion: false,
   plansCache: []
 };
 
@@ -92,6 +97,7 @@ function attachEventListeners() {
 }
 
 function renderUI() {
+  hideSuccessScreen();
   showSection(elements.plansSection);
 
   if (appState.isAddingNewPlan) {
@@ -124,6 +130,15 @@ function renderUI() {
     hideSection(elements.progressSection);
     hideSection(elements.planSection);
   }
+}
+
+function clearActivePlanUI() {
+  if (elements.planContainer) {
+    elements.planContainer.innerHTML = '';
+  }
+  hideSection(elements.resultsSection);
+  hideSection(elements.progressSection);
+  hideSection(elements.planSection);
 }
 
 function scrollToPlannerInput() {
@@ -168,7 +183,10 @@ function applyPlanToState(plan) {
     totalDuration: totalDuration,
     videos: []
   };
-  appState.plan = plan.planData || [];
+  appState.plan = Array.isArray(plan.planData) ? plan.planData.map(day => ({
+    ...day,
+    videos: Array.isArray(day.videos) ? [...day.videos] : []
+  })) : [];
   appState.dailyWatchTime = plan.dailyMinutes || 0;
   elements.dailyWatchTimeInput.value = appState.dailyWatchTime || '';
 }
@@ -180,6 +198,7 @@ function handleAddNewPlan() {
   elements.playlistUrlInput.value = '';
   elements.dailyWatchTimeInput.value = '';
   hideError();
+  hideSuccessScreen();
   renderUI();
 }
 
@@ -188,21 +207,40 @@ function handleAddNewPlan() {
 // ========================================
 async function loadAndDisplayPlans() {
   try {
-    const plansData = await getPlansData();
+    // Defensive check: validate activePlanId points to existing plan
+    const plansData = await validateAndFixPlansState();
     appState.currentPlanId = plansData.activePlanId || null;
-    appState.plansCache = plansData.plans || [];
+
+    const recalculatedPlans = (plansData.plans || []).map(plan => {
+      return {
+        ...plan,
+        progress: deriveProgressFromPlanData(plan.planData)
+      };
+    });
+
+    appState.plansCache = recalculatedPlans;
+
+    if (!appState.currentPlanId || appState.plansCache.length === 0) {
+      clearActivePlanUI();
+    }
 
     renderPlansList(appState.plansCache, appState.currentPlanId);
     showSection(elements.plansSection);
   } catch (error) {
     console.error('Error loading plans:', error);
     appState.plansCache = [];
+    clearActivePlanUI();
     renderPlansList([], null);
     showSection(elements.plansSection);
   }
 }
 
 async function restoreActivePlan() {
+  if (!appState.currentPlanId) {
+    clearActivePlanUI();
+    return;
+  }
+
   if (appState.currentPlanId) {
     const activePlan = appState.plansCache.find(plan => plan.id === appState.currentPlanId) || await getActivePlan();
     if (activePlan) {
@@ -221,6 +259,7 @@ async function restoreActivePlan() {
       } catch (error) {
         console.error('Error syncing legacy plan data:', error);
       }
+      activePlan.progress = deriveProgressFromPlanData(activePlan.planData);
       applyPlanToState(activePlan);
       return;
     }
@@ -240,12 +279,15 @@ async function restoreActivePlan() {
         totalVideos: savedPlanData.playlistData?.videoCount || 0,
         totalDays: savedPlanData.plan.length,
         dailyMinutes: savedPlanData.dailyWatchTime,
-        progress: { currentDay: 1, lastWatchedIndex: 0 },
+        progress: deriveProgressFromPlanData(savedPlanData.plan),
         planData: savedPlanData.plan
       }
     ];
     renderPlansList(appState.plansCache, appState.currentPlanId);
+    return;
   }
+
+  clearActivePlanUI();
 }
 
 function renderPlansList(plans, activePlanId) {
@@ -280,17 +322,8 @@ function renderPlansList(plans, activePlanId) {
     title.className = 'plan-item-title';
     title.textContent = plan.title;
     
-    // Calculate progress percentage
-    let completedVideos = 0;
-    let totalVideos = plan.totalVideos || 0;
-    if (plan.planData && Array.isArray(plan.planData)) {
-      plan.planData.forEach(dayData => {
-        if (dayData.completed) {
-          completedVideos += dayData.videos.length;
-        }
-      });
-    }
-    const progressPercent = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
+    const progress = deriveProgressFromPlanData(plan.planData);
+    const progressPercent = progress.percent;
     
     const subtext = document.createElement('div');
     subtext.className = 'plan-item-subtext';
@@ -381,16 +414,8 @@ function updateProgressBar(planId) {
       }
     });
     
-    // Calculate progress from plan data
-    let completedVideos = 0;
-    appState.plan.forEach((dayData, dayIndex) => {
-      if (dayData.completed) {
-        completedVideos += dayData.videos.length;
-      }
-    });
-    
-    const totalVideos = appState.playlistData.videoCount || 0;
-    const progressPercent = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0;
+    const progress = deriveProgressFromPlanData(appState.plan);
+    const progressPercent = progress.percent;
     
     // Update UI
     elements.progressBar.style.width = progressPercent + '%';
@@ -461,19 +486,30 @@ async function handleFetchPlaylist() {
 }
 
 async function handleGeneratePlan() {
+  const generateButton = elements.generatePlanBtn;
+  generateButton.disabled = true;
+  hideError();
+  hideSuccessScreen();
+
   const dailyTime = parseInt(elements.dailyWatchTimeInput.value);
-  
-  if (!dailyTime || dailyTime <= 0) {
-    showError('Please enter a valid daily watch time');
-    return;
-  }
-  
-  if (!appState.playlistData || !appState.playlistData.videos) {
-    showError('Please fetch a playlist first');
-    return;
-  }
+  let shouldClose = false;
   
   try {
+    if (!dailyTime || dailyTime <= 0) {
+      showError('Please enter a valid daily watch time');
+      return;
+    }
+    
+    if (!appState.playlistData || !appState.playlistData.videos) {
+      showError('Please fetch a playlist first');
+      return;
+    }
+
+    if (appState.playlistData.videos.length === 0) {
+      showError('This playlist has no videos. Please choose another playlist.');
+      return;
+    }
+
     // Generate day-wise plan
     const plan = generateDayWisePlan(appState.playlistData.videos, dailyTime);
     
@@ -485,48 +521,34 @@ async function handleGeneratePlan() {
     // Store plan in state
     appState.plan = plan;
     appState.dailyWatchTime = dailyTime;
-    
-    // Render plan UI
-    renderPlan(plan);
-    
-    // Show plan section
-    showSection(elements.planSection);
-    
-    // Save to storage for persistence
+
+    // Save to storage for persistence (legacy + compatibility)
     await saveToStorage('planData', {
       playlistData: appState.playlistData,
       plan: appState.plan,
       dailyWatchTime: appState.dailyWatchTime
     });
     
-    // Also save as a new plan in the plans system
-    try {
-      const newPlan = await createPlan(appState.playlistData, dailyTime, plan);
-      appState.currentPlanId = newPlan.id;
-      
-      // Ensure any immediate completions are synced to the new plan
-      try {
-        await updatePlanData(appState.currentPlanId, appState.plan);
-      } catch (syncError) {
-        console.error('Error syncing new plan data:', syncError);
-      }
+    // Save as a new plan in the plans system (atomic activePlanId update)
+    const newPlan = await createPlan(appState.playlistData, dailyTime, plan);
+    appState.currentPlanId = newPlan.id;
 
-      // Reload and display plans
-      await loadAndDisplayPlans();
-      
-      // Update progress bar
-      updateProgressBar(newPlan.id);
-    } catch (planError) {
-      console.error('Error saving plan to plans system:', planError);
-      // Plan is still saved to planData, so continue
-    }
-
-    appState.isAddingNewPlan = false;
-    renderUI();
+    showSuccessScreen();
+    shouldClose = true;
     
   } catch (error) {
     showError(`Error generating plan: ${error.message}`);
     console.error('Plan generation error:', error);
+  } finally {
+    if (!shouldClose) {
+      generateButton.disabled = false;
+    }
+  }
+
+  if (shouldClose) {
+    setTimeout(() => {
+      window.close();
+    }, 1000);
   }
 }
 
@@ -566,6 +588,27 @@ function showError(message) {
 
 function hideError() {
   elements.errorMessage.classList.add('hidden');
+}
+
+function showSuccessScreen() {
+  hideError();
+  hideSection(elements.plansSection);
+  hideSection(elements.playlistSection);
+  hideSection(elements.resultsSection);
+  hideSection(elements.progressSection);
+  hideSection(elements.plannerInputSection);
+  hideSection(elements.planSection);
+  hideSection(elements.loadingIndicator);
+  hideSection(elements.plansFooter);
+  hideSection(elements.mainHeader);
+  hideSection(elements.mainFooter);
+  elements.successSection.classList.remove('hidden');
+}
+
+function hideSuccessScreen() {
+  elements.successSection.classList.add('hidden');
+  showSection(elements.mainHeader);
+  showSection(elements.mainFooter);
 }
 
 function showMessage(message, type = 'info') {
@@ -634,7 +677,10 @@ function renderPlan(plan) {
   elements.planContainer.innerHTML = '';
   
   if (!plan || plan.length === 0) {
-    elements.planContainer.innerHTML = '<p style="color: var(--text-secondary);">No plan generated</p>';
+    const emptyMessage = document.createElement('p');
+    emptyMessage.textContent = 'No plan generated';
+    emptyMessage.style.color = 'var(--text-secondary)';
+    elements.planContainer.appendChild(emptyMessage);
     return;
   }
   
@@ -672,7 +718,8 @@ function createDayCard(dayData, index) {
   const videoList = document.createElement('ul');
   videoList.className = 'video-list';
   
-  dayData.videos.forEach(video => {
+  const videos = Array.isArray(dayData.videos) ? dayData.videos : [];
+  videos.forEach(video => {
     const videoItem = document.createElement('li');
     videoItem.className = 'video-item';
     
@@ -715,39 +762,54 @@ function createDayCard(dayData, index) {
 }
 
 async function handleDayCompletion(dayIndex, completed) {
-  // Update state
-  appState.plan[dayIndex].completed = completed;
-  
-  // Update UI
-  const card = elements.planContainer.querySelector(`[data-day-index="${dayIndex}"]`);
-  if (card) {
-    if (completed) {
-      card.classList.add('completed');
-    } else {
-      card.classList.remove('completed');
-    }
-  }
-  
-  // Save to storage
-  await saveToStorage('planData', {
-    playlistData: appState.playlistData,
-    plan: appState.plan,
-    dailyWatchTime: appState.dailyWatchTime
-  });
+  if (appState.isUpdatingCompletion) return;
+  if (!appState.plan[dayIndex]) return;
 
-  // Persist to plans system and refresh list
-  if (appState.currentPlanId) {
-    try {
-      await updatePlanData(appState.currentPlanId, appState.plan);
-      await loadAndDisplayPlans();
-    } catch (error) {
-      console.error('Error updating plan progress:', error);
+  appState.isUpdatingCompletion = true;
+  try {
+    // Update state immutably
+    const updatedPlan = appState.plan.map((day, index) => {
+      if (index !== dayIndex) return day;
+      return {
+        ...day,
+        completed
+      };
+    });
+    appState.plan = updatedPlan;
+    
+    // Update UI
+    const card = elements.planContainer.querySelector(`[data-day-index="${dayIndex}"]`);
+    if (card) {
+      if (completed) {
+        card.classList.add('completed');
+      } else {
+        card.classList.remove('completed');
+      }
     }
+    
+    // Save to storage
+    await saveToStorage('planData', {
+      playlistData: appState.playlistData,
+      plan: appState.plan,
+      dailyWatchTime: appState.dailyWatchTime
+    });
+
+    // Persist to plans system and refresh list
+    if (appState.currentPlanId) {
+      try {
+        await updatePlanData(appState.currentPlanId, appState.plan);
+        await loadAndDisplayPlans();
+      } catch (error) {
+        console.error('Error updating plan progress:', error);
+      }
+    }
+    
+    // Update progress bar
+    updateProgressBar(appState.currentPlanId);
+    
+    // Auto-scroll to next incomplete day
+    setTimeout(scrollToFirstIncompleteDay, 100);
+  } finally {
+    appState.isUpdatingCompletion = false;
   }
-  
-  // Update progress bar
-  updateProgressBar(appState.currentPlanId);
-  
-  // Auto-scroll to next incomplete day
-  setTimeout(scrollToFirstIncompleteDay, 100);
 }

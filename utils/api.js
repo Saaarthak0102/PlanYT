@@ -4,11 +4,10 @@
  * Backend proxies YouTube Data API v3 requests (no API key needed)
  */
 
-// Backend API endpoints (production first, then localhost fallback)
+// Backend API endpoints (production only)
 // Replace the production URL with your deployed backend domain
 const BACKEND_API_URLS = [
-  'https://yt-extension-z6so.vercel.app/api/playlist-info',
-  'http://localhost:3000/api/playlist-info'
+  'https://yt-extension-z6so.vercel.app/api/playlist-info'
 ];
 
 /**
