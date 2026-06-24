@@ -189,6 +189,29 @@
           Your plan duration will adjust accordingly.
         </div>
       </div>
+      <button id="speedPickerNextBtn" class="btn btn-primary">Next</button>
+    </section>
+
+    <!-- Confirm Section (Hidden by default) -->
+    <section id="confirmSection" class="section hidden">
+      <div class="step-header">
+        <button class="btn-back" id="confirmBackBtn" aria-label="Go back">←</button>
+        <h2>Confirm Plan</h2>
+      </div>
+      <div class="confirm-summary-card">
+        <div class="confirm-item">
+          <span class="label">Plan Mode:</span>
+          <span id="confirmMode" class="value">-</span>
+        </div>
+        <div class="confirm-item" id="confirmDailyTimeRow">
+          <span class="label">Daily Watch Time:</span>
+          <span id="confirmDailyTime" class="value">-</span>
+        </div>
+        <div class="confirm-item" id="confirmSpeedRow">
+          <span class="label">Playback Speed:</span>
+          <span id="confirmSpeed" class="value">-</span>
+        </div>
+      </div>
       <button id="finalGenerateBtn" class="btn btn-primary">Generate Plan</button>
     </section>
 

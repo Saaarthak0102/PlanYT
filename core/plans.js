@@ -39,11 +39,19 @@ function deriveProgressFromPlanData(planData) {
   const totalDays = planData.length;
 
   planData.forEach(dayData => {
-    const dayVideosCount = Array.isArray(dayData.videos) ? dayData.videos.length : 0;
-    totalVideos += dayVideosCount;
+    const dayVideos = Array.isArray(dayData.videos) ? dayData.videos : [];
+    totalVideos += dayVideos.length;
     if (dayData.completed) {
       completedDays += 1;
-      completedVideos += dayVideosCount;
+      completedVideos += dayVideos.length;
+    } else {
+      let dayCompletedCount = 0;
+      dayVideos.forEach(video => {
+        if (video.completed) {
+          dayCompletedCount += 1;
+        }
+      });
+      completedVideos += dayCompletedCount;
     }
   });
 
@@ -99,7 +107,7 @@ async function createPlan(playlistData, dailyWatchTime, plan, playbackSpeed = 1.
     playlistUrl: playlistData.url || '',
     totalVideos: playlistData.videoCount,
     dailyMinutes: mode === 'video-by-video' ? null : dailyWatchTime,
-    playbackSpeed: playbackSpeed,
+    playbackSpeed: mode === 'video-by-video' ? null : playbackSpeed,
     mode: mode,
     videosPerDay: mode === 'video-by-video' ? 1 : (plan[0]?.videos?.length || 0),
     createdAt: Date.now(),
@@ -275,5 +283,83 @@ async function updatePlanData(planId, planData) {
   plan.progress = deriveProgressFromPlanData(planData);
 
   await savePlansData(plansData);
+  return true;
+}
+
+/**
+ * Toggle completed state for a single video inside a day card
+ */
+async function toggleVideoCompleted(planId, dayIndex, videoIndex, value) {
+  const plansData = await getPlansData();
+  const plan = plansData.plans.find(p => p.id === planId);
+  if (!plan || !plan.planData || !plan.planData[dayIndex]) return false;
+
+  const dayData = plan.planData[dayIndex];
+  if (!dayData.videos || !dayData.videos[videoIndex]) return false;
+
+  dayData.videos[videoIndex].completed = value;
+
+  // Check if all videos in this day are completed
+  const allCompleted = dayData.videos.every(video => video.completed === true);
+  dayData.completed = allCompleted;
+
+  plan.progress = deriveProgressFromPlanData(plan.planData);
+  await savePlansData(plansData);
+
+  // Sync to legacy storage key 'planData' as well if this is the active plan
+  if (plansData.activePlanId === planId) {
+    await saveToStorage('planData', {
+      playlistData: {
+        id: plan.playlistUrl || '',
+        url: plan.playlistUrl || '',
+        title: plan.title,
+        videoCount: plan.totalVideos,
+        totalDuration: plan.planData.reduce((sum, day) => sum + (day.totalTime || 0), 0),
+        videos: []
+      },
+      plan: plan.planData,
+      dailyWatchTime: plan.dailyMinutes
+    });
+  }
+
+  return true;
+}
+
+/**
+ * Toggle completed state for an entire day card
+ */
+async function toggleDayCompleted(planId, dayIndex, value) {
+  const plansData = await getPlansData();
+  const plan = plansData.plans.find(p => p.id === planId);
+  if (!plan || !plan.planData || !plan.planData[dayIndex]) return false;
+
+  const dayData = plan.planData[dayIndex];
+  dayData.completed = value;
+
+  if (Array.isArray(dayData.videos)) {
+    dayData.videos.forEach(video => {
+      video.completed = value;
+    });
+  }
+
+  plan.progress = deriveProgressFromPlanData(plan.planData);
+  await savePlansData(plansData);
+
+  // Sync to legacy storage key 'planData' as well if this is the active plan
+  if (plansData.activePlanId === planId) {
+    await saveToStorage('planData', {
+      playlistData: {
+        id: plan.playlistUrl || '',
+        url: plan.playlistUrl || '',
+        title: plan.title,
+        videoCount: plan.totalVideos,
+        totalDuration: plan.planData.reduce((sum, day) => sum + (day.totalTime || 0), 0),
+        videos: []
+      },
+      plan: plan.planData,
+      dailyWatchTime: plan.dailyMinutes
+    });
+  }
+
   return true;
 }

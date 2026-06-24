@@ -53,10 +53,20 @@ const elements = {
   // Speed Picker
   speedPickerSection: document.getElementById('speedPickerSection'),
   speedPickerBackBtn: document.getElementById('speedPickerBackBtn'),
+  speedPickerNextBtn: document.getElementById('speedPickerNextBtn'),
   speedSlider: document.getElementById('speedSlider'),
   speedValueDisplay: document.getElementById('speedValueDisplay'),
   speedHintText: document.getElementById('speedHintText'),
   generatePlanBtn: document.getElementById('finalGenerateBtn'),
+  
+  // Confirm Section
+  confirmSection: document.getElementById('confirmSection'),
+  confirmBackBtn: document.getElementById('confirmBackBtn'),
+  confirmMode: document.getElementById('confirmMode'),
+  confirmDailyTimeRow: document.getElementById('confirmDailyTimeRow'),
+  confirmDailyTime: document.getElementById('confirmDailyTime'),
+  confirmSpeedRow: document.getElementById('confirmSpeedRow'),
+  confirmSpeed: document.getElementById('confirmSpeed'),
   
   // Plan Display
   planSection: document.getElementById('planSection'),
@@ -226,7 +236,7 @@ function attachEventListeners() {
   // Mode Picker Cards Selection
   elements.modeVideoByVideoBtn.addEventListener('click', () => {
     appState.mode = 'video-by-video';
-    appState.wizardStep = 'speed-picker';
+    appState.wizardStep = 'confirm';
     renderUI();
   });
 
@@ -253,12 +263,27 @@ function attachEventListeners() {
     renderUI();
   });
 
-  // Speed Picker Back
+  // Speed Picker Back & Next
   elements.speedPickerBackBtn.addEventListener('click', () => {
     if (appState.mode === 'video-by-video') {
       appState.wizardStep = 'mode-picker';
     } else {
       appState.wizardStep = 'daily-time';
+    }
+    renderUI();
+  });
+
+  elements.speedPickerNextBtn.addEventListener('click', () => {
+    appState.wizardStep = 'confirm';
+    renderUI();
+  });
+
+  // Confirm Back
+  elements.confirmBackBtn.addEventListener('click', () => {
+    if (appState.mode === 'video-by-video') {
+      appState.wizardStep = 'mode-picker';
+    } else {
+      appState.wizardStep = 'speed-picker';
     }
     renderUI();
   });
@@ -336,6 +361,7 @@ function renderUI() {
     hideSection(elements.plansFooter);
     hideSection(elements.planSection);
     hideSection(elements.progressSection);
+    hideSection(elements.confirmSection);
 
     if (appState.playlistData) {
       displayPlaylistSummary(appState.playlistData);
@@ -372,6 +398,24 @@ function renderUI() {
         elements.speedSlider.value = val;
       }
       updateSpeedFromSlider(val);
+    } else if (appState.wizardStep === 'confirm') {
+      hideSection(elements.playlistSection);
+      showSection(elements.resultsSection);
+      hideSection(elements.modePickerSection);
+      hideSection(elements.plannerInputSection);
+      hideSection(elements.speedPickerSection);
+      showSection(elements.confirmSection);
+
+      elements.confirmMode.textContent = appState.mode === 'video-by-video' ? 'Video by Video' : 'Custom Schedule';
+      if (appState.mode === 'video-by-video') {
+        hideSection(elements.confirmDailyTimeRow);
+        hideSection(elements.confirmSpeedRow);
+      } else {
+        showSection(elements.confirmDailyTimeRow);
+        showSection(elements.confirmSpeedRow);
+        elements.confirmDailyTime.textContent = formatMinutes(appState.dailyWatchTime);
+        elements.confirmSpeed.textContent = appState.playbackSpeed + 'x';
+      }
     }
     return;
   }
@@ -382,6 +426,7 @@ function renderUI() {
   hideSection(elements.modePickerSection);
   hideSection(elements.plannerInputSection);
   hideSection(elements.speedPickerSection);
+  hideSection(elements.confirmSection);
 
   if (appState.currentPlanId && appState.plan && appState.plan.length > 0) {
     displayPlaylistSummary(appState.playlistData);
@@ -785,7 +830,7 @@ async function handleGeneratePlan() {
     // Generate plan
     let plan = [];
     if (appState.mode === 'video-by-video') {
-      plan = generateVideoByVideoplan(appState.playlistData.videos, speed);
+      plan = generateVideoByVideoplan(appState.playlistData.videos);
     } else {
       plan = generateDayWisePlan(appState.playlistData.videos, dailyTime, speed);
     }
@@ -804,12 +849,18 @@ async function handleGeneratePlan() {
       playlistData: appState.playlistData,
       plan: appState.plan,
       dailyWatchTime: appState.dailyWatchTime,
-      playbackSpeed: speed,
+      playbackSpeed: appState.mode === 'video-by-video' ? null : speed,
       mode: appState.mode
     });
     
     // Save as a new plan in the plans system (atomic activePlanId update)
-    const newPlan = await createPlan(appState.playlistData, dailyTime, plan, speed, appState.mode);
+    const newPlan = await createPlan(
+      appState.playlistData,
+      dailyTime,
+      plan,
+      appState.mode === 'video-by-video' ? null : speed,
+      appState.mode
+    );
     appState.currentPlanId = newPlan.id;
 
     showSuccessScreen();
@@ -972,6 +1023,14 @@ function renderPlan(plan) {
   setTimeout(scrollToFirstIncompleteDay, 0);
 }
 
+function replaceDayCard(index, newDayData) {
+  const oldCard = elements.planContainer.querySelector(`[data-day-index="${index}"]`);
+  if (oldCard) {
+    const newCard = createDayCard(newDayData, index);
+    oldCard.replaceWith(newCard);
+  }
+}
+
 function createDayCard(dayData, index) {
   const card = document.createElement('div');
   card.className = `day-card ${dayData.completed ? 'completed' : ''}`;
@@ -998,21 +1057,66 @@ function createDayCard(dayData, index) {
   videoList.className = 'video-list';
   
   const videos = Array.isArray(dayData.videos) ? dayData.videos : [];
-  videos.forEach(video => {
+  videos.forEach((video, videoIdx) => {
     const videoItem = document.createElement('li');
-    videoItem.className = 'video-item';
+    videoItem.className = `video-item ${video.completed ? 'video-completed' : ''}`;
     
-    // Format video display (don't add bullet, CSS handles it)
-    let videoText = video.title;
-    
-    if (video.isPartial) {
-      const startTimeStr = video.startTime ? formatMinutes(video.startTime) : '0:00';
-      const endTimeStr = video.endTime ? formatMinutes(video.endTime) : 'end';
-      videoText += ` (${startTimeStr} - ${endTimeStr})`;
+    if (appState.mode === 'custom') {
+      // Create sub-checkbox
+      const videoCheckbox = document.createElement('input');
+      videoCheckbox.type = 'checkbox';
+      videoCheckbox.className = 'video-checkbox';
+      videoCheckbox.id = `day-${index}-video-${videoIdx}-checkbox`;
+      videoCheckbox.checked = video.completed || false;
+      videoCheckbox.addEventListener('change', (e) => handleVideoCompletion(index, videoIdx, e.target.checked));
+      
+      videoItem.appendChild(videoCheckbox);
+      
+      // Create content container
+      const contentContainer = document.createElement('div');
+      contentContainer.className = 'video-content-container';
+      
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'video-title';
+      titleSpan.textContent = video.title;
+      contentContainer.appendChild(titleSpan);
+      
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'video-meta-row';
+      
+      let timeRangeStr = '';
+      if (video.isPartial) {
+        const startTimeStr = video.startTime ? formatMinutes(video.startTime) : '0:00';
+        const endTimeStr = video.endTime ? formatMinutes(video.endTime) : 'end';
+        timeRangeStr = `(${startTimeStr} - ${endTimeStr}) `;
+      }
+      timeRangeStr += `[${formatMinutes(video.duration)}]`;
+      
+      const timeRangeLabel = document.createElement('span');
+      timeRangeLabel.className = 'video-time-range';
+      timeRangeLabel.textContent = timeRangeStr;
+      metaDiv.appendChild(timeRangeLabel);
+      
+      if (video.isPartial) {
+        const partialBadge = document.createElement('span');
+        partialBadge.className = 'partial-badge';
+        partialBadge.textContent = 'partial';
+        metaDiv.appendChild(partialBadge);
+      }
+      
+      contentContainer.appendChild(metaDiv);
+      videoItem.appendChild(contentContainer);
+    } else {
+      // Video-by-video mode
+      let videoText = video.title;
+      if (video.isPartial) {
+        const startTimeStr = video.startTime ? formatMinutes(video.startTime) : '0:00';
+        const endTimeStr = video.endTime ? formatMinutes(video.endTime) : 'end';
+        videoText += ` (${startTimeStr} - ${endTimeStr})`;
+      }
+      videoText += ` [${formatMinutes(video.duration)}]`;
+      videoItem.textContent = videoText;
     }
-    
-    videoText += ` [${formatMinutes(video.duration)}]`;
-    videoItem.textContent = videoText;
     
     videoList.appendChild(videoItem);
   });
@@ -1031,7 +1135,7 @@ function createDayCard(dayData, index) {
   
   const label = document.createElement('label');
   label.htmlFor = `day-${index}-checkbox`;
-  label.textContent = 'Mark as completed';
+  label.textContent = 'Mark day as completed';
   
   checkboxContainer.appendChild(checkbox);
   checkboxContainer.appendChild(label);
@@ -1040,47 +1144,61 @@ function createDayCard(dayData, index) {
   return card;
 }
 
+async function handleVideoCompletion(dayIndex, videoIndex, completed) {
+  if (appState.isUpdatingCompletion) return;
+  if (!appState.plan[dayIndex] || !appState.plan[dayIndex].videos[videoIndex]) return;
+
+  appState.isUpdatingCompletion = true;
+  try {
+    // Update local state
+    appState.plan[dayIndex].videos[videoIndex].completed = completed;
+    const allCompleted = appState.plan[dayIndex].videos.every(v => v.completed === true);
+    appState.plan[dayIndex].completed = allCompleted;
+
+    // Re-render only this card
+    replaceDayCard(dayIndex, appState.plan[dayIndex]);
+
+    // Save to storage using API helper
+    if (appState.currentPlanId) {
+      await toggleVideoCompleted(appState.currentPlanId, dayIndex, videoIndex, completed);
+      await loadAndDisplayPlans();
+    }
+
+    // Update progress bar
+    updateProgressBar(appState.currentPlanId);
+
+    // Auto-scroll if the day was completed
+    if (allCompleted) {
+      setTimeout(scrollToFirstIncompleteDay, 100);
+    }
+  } catch (error) {
+    console.error('Error updating video completion:', error);
+  } finally {
+    appState.isUpdatingCompletion = false;
+  }
+}
+
 async function handleDayCompletion(dayIndex, completed) {
   if (appState.isUpdatingCompletion) return;
   if (!appState.plan[dayIndex]) return;
 
   appState.isUpdatingCompletion = true;
   try {
-    // Update state immutably
-    const updatedPlan = appState.plan.map((day, index) => {
-      if (index !== dayIndex) return day;
-      return {
-        ...day,
-        completed
-      };
-    });
-    appState.plan = updatedPlan;
-    
-    // Update UI
-    const card = elements.planContainer.querySelector(`[data-day-index="${dayIndex}"]`);
-    if (card) {
-      if (completed) {
-        card.classList.add('completed');
-      } else {
-        card.classList.remove('completed');
-      }
+    // Update local state
+    appState.plan[dayIndex].completed = completed;
+    if (Array.isArray(appState.plan[dayIndex].videos)) {
+      appState.plan[dayIndex].videos.forEach(v => {
+        v.completed = completed;
+      });
     }
-    
-    // Save to storage
-    await saveToStorage('planData', {
-      playlistData: appState.playlistData,
-      plan: appState.plan,
-      dailyWatchTime: appState.dailyWatchTime
-    });
 
-    // Persist to plans system and refresh list
+    // Re-render only this card
+    replaceDayCard(dayIndex, appState.plan[dayIndex]);
+
+    // Save to storage using API helper
     if (appState.currentPlanId) {
-      try {
-        await updatePlanData(appState.currentPlanId, appState.plan);
-        await loadAndDisplayPlans();
-      } catch (error) {
-        console.error('Error updating plan progress:', error);
-      }
+      await toggleDayCompleted(appState.currentPlanId, dayIndex, completed);
+      await loadAndDisplayPlans();
     }
     
     // Update progress bar
@@ -1088,6 +1206,8 @@ async function handleDayCompletion(dayIndex, completed) {
     
     // Auto-scroll to next incomplete day
     setTimeout(scrollToFirstIncompleteDay, 100);
+  } catch (error) {
+    console.error('Error updating day completion:', error);
   } finally {
     appState.isUpdatingCompletion = false;
   }

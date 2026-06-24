@@ -47,7 +47,8 @@ function generateDayWisePlan(videos, dailyWatchTimeMinutes, playbackSpeed = 1) {
         startTime: videoStartTimeOriginal > 0.01 ? videoStartTimeOriginal : null, // null means watch from beginning
         endTime: videoEndTimeOriginal < video.durationMinutes - 0.01 ? videoEndTimeOriginal : null, // null means watch to end
         duration: timeToWatchOriginal, // original duration of segment to show in UI
-        isPartial: videoStartTimeOriginal > 0.01 || videoEndTimeOriginal < video.durationMinutes - 0.01
+        isPartial: videoStartTimeOriginal > 0.01 || videoEndTimeOriginal < video.durationMinutes - 0.01,
+        completed: false
       });
       
       currentDayTotalTime += timeToWatchActual;
@@ -90,10 +91,9 @@ function generateDayWisePlan(videos, dailyWatchTimeMinutes, playbackSpeed = 1) {
  * Generates a day-wise watch plan where each video gets its own day entry
  * 
  * @param {Array} videos - [{id, title, durationMinutes}]
- * @param {number} playbackSpeed - Playback speed
  * @returns {Array} - [{day, videos: [{title, startTime, endTime, duration}], totalTime, completed}]
  */
-function generateVideoByVideoplan(videos, playbackSpeed = 1) {
+function generateVideoByVideoplan(videos) {
   if (!videos || videos.length === 0) return [];
   
   const plan = [];
@@ -101,7 +101,6 @@ function generateVideoByVideoplan(videos, playbackSpeed = 1) {
   for (let i = 0; i < videos.length; i++) {
     const video = videos[i];
     const durationOriginal = video.durationMinutes;
-    const durationActual = durationOriginal / playbackSpeed;
     
     plan.push({
       day: i + 1,
@@ -111,9 +110,10 @@ function generateVideoByVideoplan(videos, playbackSpeed = 1) {
         startTime: null,
         endTime: null,
         duration: durationOriginal,
-        isPartial: false
+        isPartial: false,
+        completed: false
       }],
-      totalTime: durationActual,
+      totalTime: durationOriginal,
       completed: false
     });
   }

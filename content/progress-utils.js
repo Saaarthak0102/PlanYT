@@ -110,11 +110,19 @@ function deriveProgressFromPlan(planData) {
   const totalDays = planData.length;
 
   planData.forEach(dayData => {
-    const dayVideosCount = Array.isArray(dayData.videos) ? dayData.videos.length : 0;
-    totalVideos += dayVideosCount;
+    const dayVideos = Array.isArray(dayData.videos) ? dayData.videos : [];
+    totalVideos += dayVideos.length;
     if (dayData.completed) {
       completedDays += 1;
-      completedVideos += dayVideosCount;
+      completedVideos += dayVideos.length;
+    } else {
+      let dayCompletedCount = 0;
+      dayVideos.forEach(video => {
+        if (video.completed) {
+          dayCompletedCount += 1;
+        }
+      });
+      completedVideos += dayCompletedCount;
     }
   });
 

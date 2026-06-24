@@ -519,7 +519,8 @@ header .subtitle {
   position: relative;
 }
 
-.video-item::before {
+/* Bullet decoration for video-by-video (retains original bullet) */
+.video-item:not(:has(.video-checkbox))::before {
   content: "";
   position: absolute;
   left: 4px;
@@ -528,6 +529,69 @@ header .subtitle {
   height: 4px;
   background-color: var(--yt-text-tertiary);
   border-radius: 50%;
+}
+
+/* Custom mode checklist item layout */
+.video-item:has(.video-checkbox) {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--yt-space-sm);
+  padding-left: 0;
+}
+
+.video-checkbox {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: var(--yt-accent);
+  border-radius: var(--yt-radius-sm);
+  flex-shrink: 0;
+}
+
+.video-content-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-grow: 1;
+}
+
+.video-title {
+  font-weight: 400;
+  color: var(--yt-text-primary);
+  transition: opacity var(--yt-transition);
+}
+
+.video-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-sm);
+}
+
+.video-time-range {
+  font-size: 11px;
+  color: var(--yt-text-tertiary);
+}
+
+.partial-badge {
+  font-size: 9px;
+  color: var(--yt-text-tertiary);
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 1px 6px;
+  border-radius: var(--yt-radius-sm);
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.video-item.video-completed .video-title {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.video-item.video-completed .video-time-range {
+  opacity: 0.5;
 }
 
 .checkbox-container {
@@ -948,4 +1012,42 @@ html {
   border-radius: var(--yt-radius-md);
   width: 100%;
   line-height: 1.4;
+}
+
+/* ========================================
+   Confirm Plan Section
+   ======================================== */
+.confirm-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--yt-space-sm);
+  margin-bottom: var(--yt-space-lg);
+  margin-top: var(--yt-space-md);
+}
+
+.confirm-item {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--yt-space-md);
+  background-color: rgba(80, 0, 0, 0.2);
+  border: 1px solid rgba(80, 0, 0, 0.4);
+  border-radius: var(--yt-radius-md);
+  transition: all var(--yt-transition);
+}
+
+.confirm-item:hover {
+  background-color: rgba(80, 0, 0, 0.3);
+  border-color: rgba(80, 0, 0, 0.55);
+}
+
+.confirm-item .label {
+  font-weight: 400;
+  color: var(--yt-text-secondary);
+  font-size: 13px;
+}
+
+.confirm-item .value {
+  font-weight: 500;
+  color: var(--yt-text-primary);
+  font-size: 13px;
 }
