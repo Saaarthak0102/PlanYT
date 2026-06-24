@@ -754,3 +754,198 @@ html {
   color: var(--yt-accent-hover);
   text-decoration: underline;
 }
+
+/* ========================================
+   Wizard Steps Navigation & Back Button
+   ======================================== */
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-md);
+  margin-bottom: var(--yt-space-md);
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: var(--yt-text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: var(--yt-space-xs) var(--yt-space-sm);
+  border-radius: var(--yt-radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--yt-transition);
+}
+
+.btn-back:hover {
+  background-color: var(--yt-bg-hover);
+}
+
+.btn-back:focus-visible {
+  outline: 2px solid var(--yt-accent);
+}
+
+/* ========================================
+   Mode Picker Card Styles
+   ======================================== */
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--yt-space-md);
+  margin-top: var(--yt-space-md);
+}
+
+.mode-card {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-md);
+  padding: var(--yt-space-md);
+  background-color: rgba(80, 0, 0, 0.2);
+  border: 1px solid rgba(80, 0, 0, 0.4);
+  border-radius: var(--yt-radius-md);
+  color: var(--yt-text-primary);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  transition: all var(--yt-transition);
+}
+
+.mode-card:hover {
+  background-color: rgba(80, 0, 0, 0.35);
+  border-color: rgba(80, 0, 0, 0.6);
+}
+
+.mode-card:focus-visible {
+  outline: 2px solid var(--yt-accent);
+}
+
+.mode-card-icon {
+  color: var(--yt-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mode-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-card-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mode-card-desc {
+  font-size: 11px;
+  color: var(--yt-text-tertiary);
+  line-height: 1.3;
+}
+
+/* ========================================
+   Speed Picker Slider Styles
+   ======================================== */
+.speed-picker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--yt-space-lg);
+  margin: var(--yt-space-lg) 0 var(--yt-space-xl) 0;
+  width: 100%;
+}
+
+.speed-display {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--yt-text-primary);
+  letter-spacing: -0.5px;
+}
+
+.slider-container {
+  width: 100%;
+  position: relative;
+  padding: var(--yt-space-sm) 0;
+}
+
+.speed-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--yt-radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  margin: 15px 0;
+  cursor: pointer;
+}
+
+.speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--yt-accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.speed-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.speed-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--yt-accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.speed-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+}
+
+.slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.tick-label {
+  font-size: 11px;
+  color: var(--yt-text-tertiary);
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  min-width: 24px;
+  transition: color var(--yt-transition);
+}
+
+.tick-label:hover {
+  color: var(--yt-text-primary);
+}
+
+.tick-label.active {
+  color: var(--yt-accent);
+  font-weight: 500;
+}
+
+.speed-hint {
+  font-size: 12px;
+  color: var(--yt-text-secondary);
+  text-align: center;
+  background-color: rgba(80, 0, 0, 0.15);
+  border: 1px dashed rgba(80, 0, 0, 0.35);
+  padding: 8px var(--yt-space-md);
+  border-radius: var(--yt-radius-md);
+  width: 100%;
+  line-height: 1.4;
+}

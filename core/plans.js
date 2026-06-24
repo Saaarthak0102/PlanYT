@@ -87,7 +87,7 @@ async function savePlansData(data) {
 /**
  * Create a new plan from current playlist data
  */
-async function createPlan(playlistData, dailyWatchTime, plan) {
+async function createPlan(playlistData, dailyWatchTime, plan, playbackSpeed = 1.0, mode = 'custom') {
   const plansData = await getPlansData();
   
   // Calculate total days needed
@@ -98,9 +98,10 @@ async function createPlan(playlistData, dailyWatchTime, plan) {
     title: playlistData.title,
     playlistUrl: playlistData.url || '',
     totalVideos: playlistData.videoCount,
-    dailyMinutes: dailyWatchTime,
-    playbackSpeed: 1.0,
-    videosPerDay: plan[0]?.videos?.length || 0,
+    dailyMinutes: mode === 'video-by-video' ? null : dailyWatchTime,
+    playbackSpeed: playbackSpeed,
+    mode: mode,
+    videosPerDay: mode === 'video-by-video' ? 1 : (plan[0]?.videos?.length || 0),
     createdAt: Date.now(),
     totalDays: totalDays,
     progress: deriveProgressFromPlanData(plan),

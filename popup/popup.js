@@ -16,6 +16,7 @@ const elements = {
   playlistSection: document.getElementById('playlistSection'),
   playlistUrlInput: document.getElementById('playlistUrlInput'),
   fetchPlaylistBtn: document.getElementById('fetchPlaylistBtn'),
+  playlistSectionBackBtn: document.getElementById('playlistSectionBackBtn'),
   
   // UI States
   loadingIndicator: document.getElementById('loadingIndicator'),
@@ -40,7 +41,22 @@ const elements = {
   // Planner Input
   plannerInputSection: document.getElementById('plannerInputSection'),
   dailyWatchTimeInput: document.getElementById('dailyWatchTimeInput'),
-  generatePlanBtn: document.getElementById('generatePlanBtn'),
+  plannerInputBackBtn: document.getElementById('plannerInputBackBtn'),
+  plannerInputNextBtn: document.getElementById('plannerInputNextBtn'),
+  
+  // Mode Picker
+  modePickerSection: document.getElementById('modePickerSection'),
+  modePickerBackBtn: document.getElementById('modePickerBackBtn'),
+  modeVideoByVideoBtn: document.getElementById('modeVideoByVideoBtn'),
+  modeCustomBtn: document.getElementById('modeCustomBtn'),
+  
+  // Speed Picker
+  speedPickerSection: document.getElementById('speedPickerSection'),
+  speedPickerBackBtn: document.getElementById('speedPickerBackBtn'),
+  speedSlider: document.getElementById('speedSlider'),
+  speedValueDisplay: document.getElementById('speedValueDisplay'),
+  speedHintText: document.getElementById('speedHintText'),
+  generatePlanBtn: document.getElementById('finalGenerateBtn'),
   
   // Plan Display
   planSection: document.getElementById('planSection'),
@@ -60,7 +76,10 @@ let appState = {
   isAddingNewPlan: false,
   isFetching: false,
   isUpdatingCompletion: false,
-  plansCache: []
+  plansCache: [],
+  wizardStep: 'enter-url',
+  mode: 'custom',
+  playbackSpeed: 1.0
 };
 
 // ========================================
@@ -191,31 +210,178 @@ function attachEventListeners() {
   
   // Reset
   elements.resetBtn.addEventListener('click', handleReset);
+
+  // Playlist Section Back Button
+  elements.playlistSectionBackBtn.addEventListener('click', () => {
+    appState.isAddingNewPlan = false;
+    renderUI();
+  });
+
+  // Mode Picker Back
+  elements.modePickerBackBtn.addEventListener('click', () => {
+    appState.wizardStep = 'enter-url';
+    renderUI();
+  });
+
+  // Mode Picker Cards Selection
+  elements.modeVideoByVideoBtn.addEventListener('click', () => {
+    appState.mode = 'video-by-video';
+    appState.wizardStep = 'speed-picker';
+    renderUI();
+  });
+
+  elements.modeCustomBtn.addEventListener('click', () => {
+    appState.mode = 'custom';
+    appState.wizardStep = 'daily-time';
+    renderUI();
+  });
+
+  // Planner Input Back & Next
+  elements.plannerInputBackBtn.addEventListener('click', () => {
+    appState.wizardStep = 'mode-picker';
+    renderUI();
+  });
+
+  elements.plannerInputNextBtn.addEventListener('click', () => {
+    const dailyTime = parseInt(elements.dailyWatchTimeInput.value);
+    if (!dailyTime || dailyTime <= 0) {
+      showError('Please enter a valid daily watch time');
+      return;
+    }
+    appState.dailyWatchTime = dailyTime;
+    appState.wizardStep = 'speed-picker';
+    renderUI();
+  });
+
+  // Speed Picker Back
+  elements.speedPickerBackBtn.addEventListener('click', () => {
+    if (appState.mode === 'video-by-video') {
+      appState.wizardStep = 'mode-picker';
+    } else {
+      appState.wizardStep = 'daily-time';
+    }
+    renderUI();
+  });
+
+  // Speed Slider input event
+  if (elements.speedSlider) {
+    elements.speedSlider.addEventListener('input', (e) => {
+      updateSpeedFromSlider(parseInt(e.target.value));
+    });
+  }
+
+  // Speed Tick Labels Click/Tap
+  const tickLabels = document.querySelectorAll('.tick-label');
+  tickLabels.forEach(tick => {
+    tick.addEventListener('click', () => {
+      const idx = parseInt(tick.dataset.index);
+      if (elements.speedSlider) {
+        elements.speedSlider.value = idx;
+      }
+      updateSpeedFromSlider(idx);
+    });
+  });
+}
+
+const SPEED_VALUES = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+const SPEED_LABELS = ['0.25', '0.5', '0.75', '1', '1.25', '1.5', '1.75', '2'];
+
+function updateSpeedFromSlider(index) {
+  const speed = SPEED_VALUES[index];
+  appState.playbackSpeed = speed;
+  
+  if (elements.speedValueDisplay) {
+    elements.speedValueDisplay.textContent = SPEED_LABELS[index] + '×';
+  }
+  
+  const tickLabels = document.querySelectorAll('.tick-label');
+  tickLabels.forEach((tick, idx) => {
+    if (idx === index) {
+      tick.classList.add('active');
+    } else {
+      tick.classList.remove('active');
+    }
+  });
+  
+  updateSpeedHint();
+}
+
+function updateSpeedHint() {
+  if (!elements.speedHintText) return;
+  
+  const speed = appState.playbackSpeed || 1.0;
+  
+  if (appState.mode === 'custom') {
+    const dailyMinutes = appState.dailyWatchTime || 30;
+    const effective = Math.round(dailyMinutes * speed);
+    elements.speedHintText.textContent = `Your ${dailyMinutes} min/day becomes effectively ~${effective} min of content`;
+  } else {
+    // Video-by-Video mode
+    if (appState.playlistData && appState.playlistData.totalDuration && appState.playlistData.videoCount) {
+      const avgDuration = appState.playlistData.totalDuration / appState.playlistData.videoCount;
+      const original = Math.round(avgDuration);
+      const effective = Math.round(avgDuration / speed);
+      elements.speedHintText.textContent = `An average video of ${original} min will take ~${effective} min of daily watch time`;
+    } else {
+      elements.speedHintText.textContent = `Your plan duration will adjust according to speed.`;
+    }
+  }
 }
 
 function renderUI() {
   hideSuccessScreen();
-  showSection(elements.plansSection);
 
   if (appState.isAddingNewPlan) {
-    showSection(elements.playlistSection);
+    hideSection(elements.plansSection);
+    hideSection(elements.plansFooter);
     hideSection(elements.planSection);
     hideSection(elements.progressSection);
 
     if (appState.playlistData) {
       displayPlaylistSummary(appState.playlistData);
-      showSection(elements.plannerInputSection);
-      scrollToPlannerInput();
-    } else {
-      hideSection(elements.resultsSection);
-      hideSection(elements.plannerInputSection);
     }
 
+    if (appState.wizardStep === 'enter-url') {
+      showSection(elements.playlistSection);
+      hideSection(elements.resultsSection);
+      hideSection(elements.modePickerSection);
+      hideSection(elements.plannerInputSection);
+      hideSection(elements.speedPickerSection);
+    } else if (appState.wizardStep === 'mode-picker') {
+      hideSection(elements.playlistSection);
+      showSection(elements.resultsSection);
+      showSection(elements.modePickerSection);
+      hideSection(elements.plannerInputSection);
+      hideSection(elements.speedPickerSection);
+    } else if (appState.wizardStep === 'daily-time') {
+      hideSection(elements.playlistSection);
+      showSection(elements.resultsSection);
+      hideSection(elements.modePickerSection);
+      showSection(elements.plannerInputSection);
+      hideSection(elements.speedPickerSection);
+    } else if (appState.wizardStep === 'speed-picker') {
+      hideSection(elements.playlistSection);
+      showSection(elements.resultsSection);
+      hideSection(elements.modePickerSection);
+      hideSection(elements.plannerInputSection);
+      showSection(elements.speedPickerSection);
+      
+      const sliderVal = SPEED_VALUES.indexOf(appState.playbackSpeed);
+      const val = sliderVal >= 0 ? sliderVal : 3;
+      if (elements.speedSlider) {
+        elements.speedSlider.value = val;
+      }
+      updateSpeedFromSlider(val);
+    }
     return;
   }
 
+  showSection(elements.plansSection);
+  showSection(elements.plansFooter);
   hideSection(elements.playlistSection);
+  hideSection(elements.modePickerSection);
   hideSection(elements.plannerInputSection);
+  hideSection(elements.speedPickerSection);
 
   if (appState.currentPlanId && appState.plan && appState.plan.length > 0) {
     displayPlaylistSummary(appState.playlistData);
@@ -286,12 +452,17 @@ function applyPlanToState(plan) {
   })) : [];
   appState.dailyWatchTime = plan.dailyMinutes || 0;
   elements.dailyWatchTimeInput.value = appState.dailyWatchTime || '';
+  appState.playbackSpeed = plan.playbackSpeed || 1.0;
+  appState.mode = plan.mode || 'custom';
 }
 
 function handleAddNewPlan() {
   appState.isAddingNewPlan = true;
   appState.playlistData = null;
   appState.plan = [];
+  appState.wizardStep = 'enter-url';
+  appState.mode = 'custom';
+  appState.playbackSpeed = 1.0;
   elements.playlistUrlInput.value = '';
   elements.dailyWatchTimeInput.value = '';
   hideError();
@@ -569,8 +740,8 @@ async function handleFetchPlaylist() {
       videos: playlistData.videos
     };
     
+    appState.wizardStep = 'mode-picker';
     renderUI();
-    scrollToPlannerInput();
     showLoading(false);
     
   } catch (error) {
@@ -584,15 +755,17 @@ async function handleFetchPlaylist() {
 
 async function handleGeneratePlan() {
   const generateButton = elements.generatePlanBtn;
-  generateButton.disabled = true;
+  if (generateButton) {
+    generateButton.disabled = true;
+  }
   hideError();
   hideSuccessScreen();
 
-  const dailyTime = parseInt(elements.dailyWatchTimeInput.value);
+  const dailyTime = appState.mode === 'video-by-video' ? 0 : parseInt(elements.dailyWatchTimeInput.value);
   let shouldClose = false;
   
   try {
-    if (!dailyTime || dailyTime <= 0) {
+    if (appState.mode === 'custom' && (!dailyTime || dailyTime <= 0)) {
       showError('Please enter a valid daily watch time');
       return;
     }
@@ -607,8 +780,15 @@ async function handleGeneratePlan() {
       return;
     }
 
-    // Generate day-wise plan
-    const plan = generateDayWisePlan(appState.playlistData.videos, dailyTime);
+    const speed = appState.playbackSpeed || 1.0;
+    
+    // Generate plan
+    let plan = [];
+    if (appState.mode === 'video-by-video') {
+      plan = generateVideoByVideoplan(appState.playlistData.videos, speed);
+    } else {
+      plan = generateDayWisePlan(appState.playlistData.videos, dailyTime, speed);
+    }
     
     if (plan.length === 0) {
       showError('Could not generate plan. Please check your inputs.');
@@ -623,11 +803,13 @@ async function handleGeneratePlan() {
     await saveToStorage('planData', {
       playlistData: appState.playlistData,
       plan: appState.plan,
-      dailyWatchTime: appState.dailyWatchTime
+      dailyWatchTime: appState.dailyWatchTime,
+      playbackSpeed: speed,
+      mode: appState.mode
     });
     
     // Save as a new plan in the plans system (atomic activePlanId update)
-    const newPlan = await createPlan(appState.playlistData, dailyTime, plan);
+    const newPlan = await createPlan(appState.playlistData, dailyTime, plan, speed, appState.mode);
     appState.currentPlanId = newPlan.id;
 
     showSuccessScreen();
@@ -637,7 +819,7 @@ async function handleGeneratePlan() {
     showError(`Error generating plan: ${error.message}`);
     console.error('Plan generation error:', error);
   } finally {
-    if (!shouldClose) {
+    if (!shouldClose && generateButton) {
       generateButton.disabled = false;
     }
   }

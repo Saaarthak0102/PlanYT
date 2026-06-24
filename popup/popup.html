@@ -38,6 +38,10 @@
 
     <!-- Playlist Input Section -->
     <section id="playlistSection" class="section hidden">
+      <div class="step-header">
+        <button class="btn-back" id="playlistSectionBackBtn" aria-label="Go back">←</button>
+        <h2>Add New Plan</h2>
+      </div>
       <div class="input-group">
         <label for="playlistUrlInput">Playlist URL</label>
         <input 
@@ -99,8 +103,44 @@
       </div>
     </section>
 
+    <!-- Mode Picker Section (Hidden by default) -->
+    <section id="modePickerSection" class="section hidden">
+      <div class="step-header">
+        <button class="btn-back" id="modePickerBackBtn" aria-label="Go back">←</button>
+        <h2>Select Plan Mode</h2>
+      </div>
+      <div class="mode-options">
+        <button class="mode-card" id="modeVideoByVideoBtn">
+          <div class="mode-card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+              <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4zm-8 11V9l5 3-5 3z"/>
+            </svg>
+          </div>
+          <div class="mode-card-content">
+            <div class="mode-card-title">Video by Video</div>
+            <div class="mode-card-desc">Watch exactly one video per day. No splitting.</div>
+          </div>
+        </button>
+        <button class="mode-card" id="modeCustomBtn">
+          <div class="mode-card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+              <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+            </svg>
+          </div>
+          <div class="mode-card-content">
+            <div class="mode-card-title">Custom Schedule</div>
+            <div class="mode-card-desc">Set a daily watch time quota. Videos are split.</div>
+          </div>
+        </button>
+      </div>
+    </section>
+
     <!-- Planner Input Section (Hidden by default) -->
     <section id="plannerInputSection" class="section hidden">
+      <div class="step-header">
+        <button class="btn-back" id="plannerInputBackBtn" aria-label="Go back">←</button>
+        <h2>Daily Watch Time</h2>
+      </div>
       <div class="input-group">
         <label for="dailyWatchTimeInput">Daily Watch Time (minutes)</label>
         <input 
@@ -110,8 +150,46 @@
           min="1"
           autocomplete="off"
         >
-        <button id="generatePlanBtn" class="btn btn-primary">Generate Plan</button>
+        <button id="plannerInputNextBtn" class="btn btn-primary">Next</button>
       </div>
+    </section>
+
+    <!-- Speed Picker Section (Hidden by default) -->
+    <section id="speedPickerSection" class="section hidden">
+      <div class="step-header">
+        <button class="btn-back" id="speedPickerBackBtn" aria-label="Go back">←</button>
+        <h2>Select Playback Speed</h2>
+      </div>
+      <div class="speed-picker-container">
+        <div class="speed-display" id="speedValueDisplay">1×</div>
+        
+        <div class="slider-container">
+          <input 
+            type="range" 
+            id="speedSlider" 
+            min="0" 
+            max="7" 
+            value="3" 
+            step="1"
+            class="speed-slider"
+          >
+          <div class="slider-ticks" id="sliderTicks">
+            <span class="tick-label" data-index="0">0.25</span>
+            <span class="tick-label" data-index="1">0.5</span>
+            <span class="tick-label" data-index="2">0.75</span>
+            <span class="tick-label active" data-index="3">1</span>
+            <span class="tick-label" data-index="4">1.25</span>
+            <span class="tick-label" data-index="5">1.5</span>
+            <span class="tick-label" data-index="6">1.75</span>
+            <span class="tick-label" data-index="7">2</span>
+          </div>
+        </div>
+        
+        <div class="speed-hint" id="speedHintText">
+          Your plan duration will adjust accordingly.
+        </div>
+      </div>
+      <button id="finalGenerateBtn" class="btn btn-primary">Generate Plan</button>
     </section>
 
     <!-- Generated Plan Section (Hidden by default) -->

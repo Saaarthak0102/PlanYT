@@ -18,43 +18,45 @@
  * @param {number} dailyWatchTimeMinutes - Minutes available per day
  * @returns {Array} - [{day, videos: [{title, startTime, endTime, duration}], totalTime, completed}]
  */
-function generateDayWisePlan(videos, dailyWatchTimeMinutes) {
+function generateDayWisePlan(videos, dailyWatchTimeMinutes, playbackSpeed = 1) {
   if (!videos || videos.length === 0) return [];
   if (!dailyWatchTimeMinutes || dailyWatchTimeMinutes <= 0) return [];
   
   const plan = [];
   let currentDay = 1;
-  let remainingDailyTime = dailyWatchTimeMinutes;
+  let remainingDailyTime = dailyWatchTimeMinutes; // in actual minutes
   let currentDayVideos = [];
-  let currentDayTotalTime = 0;
+  let currentDayTotalTime = 0; // in actual minutes
   
   for (let i = 0; i < videos.length; i++) {
     const video = videos[i];
-    let videoRemainingTime = video.durationMinutes;
-    let videoStartTime = 0;
+    let videoRemainingTimeOriginal = video.durationMinutes;
+    let videoStartTimeOriginal = 0;
     
     // Process this video (might span multiple days)
-    while (videoRemainingTime > 0) {
-      const timeToWatch = Math.min(videoRemainingTime, remainingDailyTime);
-      const videoEndTime = videoStartTime + timeToWatch;
+    while (videoRemainingTimeOriginal > 0.01) {
+      const videoRemainingTimeActual = videoRemainingTimeOriginal / playbackSpeed;
+      const timeToWatchActual = Math.min(videoRemainingTimeActual, remainingDailyTime);
+      const timeToWatchOriginal = timeToWatchActual * playbackSpeed;
+      const videoEndTimeOriginal = videoStartTimeOriginal + timeToWatchOriginal;
       
       // Add video segment to current day
       currentDayVideos.push({
         id: video.id,
         title: video.title,
-        startTime: videoStartTime > 0 ? videoStartTime : null, // null means watch from beginning
-        endTime: videoEndTime < video.durationMinutes ? videoEndTime : null, // null means watch to end
-        duration: timeToWatch,
-        isPartial: videoStartTime > 0 || videoEndTime < video.durationMinutes
+        startTime: videoStartTimeOriginal > 0.01 ? videoStartTimeOriginal : null, // null means watch from beginning
+        endTime: videoEndTimeOriginal < video.durationMinutes - 0.01 ? videoEndTimeOriginal : null, // null means watch to end
+        duration: timeToWatchOriginal, // original duration of segment to show in UI
+        isPartial: videoStartTimeOriginal > 0.01 || videoEndTimeOriginal < video.durationMinutes - 0.01
       });
       
-      currentDayTotalTime += timeToWatch;
-      remainingDailyTime -= timeToWatch;
-      videoRemainingTime -= timeToWatch;
-      videoStartTime = videoEndTime;
+      currentDayTotalTime += timeToWatchActual;
+      remainingDailyTime -= timeToWatchActual;
+      videoRemainingTimeOriginal -= timeToWatchOriginal;
+      videoStartTimeOriginal = videoEndTimeOriginal;
       
       // If day is full or video is done, finalize day
-      if (remainingDailyTime <= 0.01 || (videoRemainingTime <= 0 && i === videos.length - 1)) {
+      if (remainingDailyTime <= 0.01 || (videoRemainingTimeOriginal <= 0.01 && i === videos.length - 1)) {
         plan.push({
           day: currentDay,
           videos: currentDayVideos,
@@ -77,6 +79,41 @@ function generateDayWisePlan(videos, dailyWatchTimeMinutes) {
       day: currentDay,
       videos: currentDayVideos,
       totalTime: currentDayTotalTime,
+      completed: false
+    });
+  }
+  
+  return plan;
+}
+
+/**
+ * Generates a day-wise watch plan where each video gets its own day entry
+ * 
+ * @param {Array} videos - [{id, title, durationMinutes}]
+ * @param {number} playbackSpeed - Playback speed
+ * @returns {Array} - [{day, videos: [{title, startTime, endTime, duration}], totalTime, completed}]
+ */
+function generateVideoByVideoplan(videos, playbackSpeed = 1) {
+  if (!videos || videos.length === 0) return [];
+  
+  const plan = [];
+  
+  for (let i = 0; i < videos.length; i++) {
+    const video = videos[i];
+    const durationOriginal = video.durationMinutes;
+    const durationActual = durationOriginal / playbackSpeed;
+    
+    plan.push({
+      day: i + 1,
+      videos: [{
+        id: video.id,
+        title: video.title,
+        startTime: null,
+        endTime: null,
+        duration: durationOriginal,
+        isPartial: false
+      }],
+      totalTime: durationActual,
       completed: false
     });
   }
