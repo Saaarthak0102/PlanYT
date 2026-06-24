@@ -12,7 +12,7 @@
 ---
 
 # PlanYT - v1.3.0
-Sub-Task Checkboxes · Smooth Completion Transitions · Bug Fixes
+Sub-Task Checkboxes · Dual Plan Modes · Custom Speed · Bug Fixes
 
 PlanYT is a lightweight Chrome extension that transforms overwhelming YouTube playlists into structured, realistic daily plans — directly inside YouTube.
 
