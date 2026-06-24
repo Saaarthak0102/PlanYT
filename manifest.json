@@ -1,45 +1,36 @@
 {
-  "manifest_version": 3,
-  "name": "PlanYT - Youtube Playlist Planner & Progress Tracker",
-  "short_name": "PlanYT",
-  "version": "1.2.2",
-  "description": "Your Youtube, planned.",
-  "permissions": [
-    "storage"
-  ],
-  "host_permissions": [
-    "https://www.youtube.com/*",
-    "https://yt-extension-z6so.vercel.app/*"
-  ],
-  "action": {
-    "default_popup": "popup/popup.html",
-    "default_icon": {
-      "16": "assets/icon16.png",
-      "32": "assets/icon32.png"
-    }
-  },
-  "icons": {
-    "16": "assets/icon16.png",
-    "32": "assets/icon32.png",
-    "48": "assets/icon48.png",
-    "128": "assets/icon128.png"
-  },
-  "background": {
-    "service_worker": "background/background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["https://www.youtube.com/*"],
-      "js": ["content/youtube-integration.js"],
+   "action": {
+      "default_icon": {
+         "16": "assets/icon16.png",
+         "32": "assets/icon32.png"
+      },
+      "default_popup": "popup/popup.html"
+   },
+   "background": {
+      "service_worker": "background/background.js"
+   },
+   "content_scripts": [ {
+      "js": [ "content/progress-utils.js", "content/progress-widget.js", "content/youtube-integration.js" ],
+      "matches": [ "https://www.youtube.com/*" ],
       "run_at": "document_end"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "assets/icon32.png"
-      ],
-      "matches": ["https://www.youtube.com/*"]
-    }
-  ]
+   } ],
+   "description": "Your Youtube, planned.",
+   "host_permissions": [ "https://www.youtube.com/*", "https://yt-extension-z6so.vercel.app/*" ],
+   "icons": {
+      "128": "assets/icon128.png",
+      "16": "assets/icon16.png",
+      "32": "assets/icon32.png",
+      "48": "assets/icon48.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmBPL5f2tpBvbEX4ikUwSQa0Pr4ykcgAm05dt2PCLMnJFdhB8ry2T5O4b7WrFfs/LBv2v6BWduxvGM+m4nWKjkNXadwPd4tvdf/LgIMN1q6JUD5UJohgTrOPoRzyQQQIY0XF0I2KclqhLr7BsBasJgRMzOIhPHMV/JZ2jvJhu8auDE2wYe80QrM69/CFqGoc2x2IqAaBfjCxZfVZApoQ7ExLelPZoKIImQN7GKA4vbEms02+xc6MzkWFebi6BoGGwx9biehz2d+VSxFcOZZ0wmRgDR1ZAs6P4LIQ/GQHsgWFitCIm/sD1M390CfGv2dVUm7k+UnjXs4sY0TSjzUEUCwIDAQAB",
+   "manifest_version": 3,
+   "name": "PlanYT - Youtube Playlist Planner & Progress Tracker",
+   "permissions": [ "storage" ],
+   "short_name": "PlanYT",
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "1.2.2",
+   "web_accessible_resources": [ {
+      "matches": [ "https://www.youtube.com/*" ],
+      "resources": [ "assets/icon32.png" ]
+   } ]
 }

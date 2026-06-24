@@ -70,10 +70,107 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('Extension loaded');
   attachEventListeners();
 
+  // Check for a pending action placed by the content-script/widget
+  const pending = await getPendingPopupAction();
+
+  // Load plans first so we can resolve open/create actions without flashing old state
   await loadAndDisplayPlans();
-  await restoreActivePlan();
+
+  if (pending) {
+    await handlePendingPopupAction(pending);
+  } else {
+    await restoreActivePlan();
+  }
+
   renderUI();
 });
+
+// Retrieve and consume any pending popup action from storage
+function getPendingPopupAction() {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(['pendingPopupAction'], (result) => {
+        const pending = result && result.pendingPopupAction ? result.pendingPopupAction : null;
+        if (pending) {
+          // Clear pending action after reading to avoid reprocessing
+          chrome.storage.local.remove(['pendingPopupAction'], () => {
+            resolve(pending);
+          });
+        } else {
+          resolve(null);
+        }
+      });
+    } catch (error) {
+      console.error('Error reading pendingPopupAction:', error);
+      resolve(null);
+    }
+  });
+}
+
+async function handlePendingPopupAction(pending) {
+  if (!pending || !pending.type) return;
+
+  try {
+    if (pending.type === 'openPlan') {
+      const playlistId = pending.playlistId || null;
+      if (!playlistId) return await restoreActivePlan();
+
+      // Try to find a matching saved plan by playlistId
+      const match = (appState.plansCache || []).find(p => {
+        try {
+          const pid = extractPlaylistId(p.playlistUrl || p.playlistUrl || '');
+          return pid === playlistId;
+        } catch (e) {
+          return false;
+        }
+      });
+
+      if (match) {
+        // Select and render the matched plan without showing previous plan first
+        await handlePlanSelect(match.id, match);
+        return;
+      }
+
+      // Not found: fallback to normal restoration
+      await restoreActivePlan();
+      return;
+    }
+
+    if (pending.type === 'createPlan') {
+      // Prefill playlist URL and trigger fetch
+      appState.isAddingNewPlan = true;
+      appState.playlistData = null;
+      appState.plan = [];
+      hideError();
+      hideSuccessScreen();
+
+      const url = pending.playlistUrl || (pending.playlistId ? `https://www.youtube.com/playlist?list=${pending.playlistId}` : '');
+      elements.playlistUrlInput.value = url;
+
+      renderUI();
+
+      // Mark that after fetch we should focus the daily minutes input
+      appState.pendingAutoFocusDaily = true;
+
+      // Trigger existing fetch flow (reuse logic)
+      await handleFetchPlaylist();
+
+      // After fetch completes, focus the daily input if available
+      try {
+        if (elements.dailyWatchTimeInput && appState.pendingAutoFocusDaily) {
+          elements.dailyWatchTimeInput.focus();
+          appState.pendingAutoFocusDaily = false;
+        }
+      } catch (e) {
+        console.error('Could not focus daily input:', e);
+      }
+
+      return;
+    }
+  } catch (error) {
+    console.error('Error handling pending popup action:', error);
+  }
+}
 
 // ========================================
 // Event Listeners
