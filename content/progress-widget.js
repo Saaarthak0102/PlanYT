@@ -25,7 +25,8 @@
     updateDebounceTimer: null,
     navigationCheckInterval: null,
     navigationDebounceTimer: null,
-    lastPath: window.location.pathname
+    lastPath: window.location.pathname,
+    activeInjectionPromise: null
   };
 
   async function injectWidgetSafely() {
@@ -33,46 +34,69 @@
       return;
     }
 
-    try {
-      const staleWidget = document.getElementById(CONFIG.WIDGET_HOST_ID);
-      if (staleWidget) {
-        staleWidget.remove();
-      }
-    } catch (err) {
-      console.warn('PlanYT: Could not remove stale widget', err);
-    }
-
-    const playlistPanel = await waitForSidebar();
-    if (!playlistPanel) {
-      console.warn('PlanYT: Playlist sidebar not found');
+    const existing = document.getElementById(CONFIG.WIDGET_HOST_ID);
+    if (existing && existing.isConnected) {
       return;
     }
 
-    const widget = createWidgetContainer();
-    if (!widget) {
-      console.warn('PlanYT: Failed to create widget');
-      return;
+    if (STATE.activeInjectionPromise) {
+      return STATE.activeInjectionPromise;
     }
 
-    const referenceElement = playlistPanel.querySelector('#header-description');
-
-    try {
-      if (referenceElement && referenceElement.parentNode === playlistPanel) {
-        playlistPanel.insertBefore(widget, referenceElement);
-      } else {
-        playlistPanel.appendChild(widget);
-      }
-    } catch (err) {
-      console.warn('PlanYT: insertBefore failed, using appendChild fallback', err);
+    STATE.activeInjectionPromise = (async () => {
       try {
-        playlistPanel.appendChild(widget);
-      } catch (err2) {
-        console.warn('PlanYT: appendChild also failed', err2);
-        return;
-      }
-    }
+        try {
+          const staleWidget = document.getElementById(CONFIG.WIDGET_HOST_ID);
+          if (staleWidget) {
+            staleWidget.remove();
+          }
+        } catch (err) {
+          console.warn('PlanYT: Could not remove stale widget', err);
+        }
 
-    STATE.initialized = true;
+        const playlistPanel = await waitForSidebar();
+        if (!playlistPanel) {
+          console.warn('PlanYT: Playlist sidebar not found');
+          return;
+        }
+
+        // Double check connected state under the lock after awaiting the sidebar
+        const existingAfterWait = document.getElementById(CONFIG.WIDGET_HOST_ID);
+        if (existingAfterWait && existingAfterWait.isConnected) {
+          return;
+        }
+
+        const widget = createWidgetContainer();
+        if (!widget) {
+          console.warn('PlanYT: Failed to create widget');
+          return;
+        }
+
+        const referenceElement = playlistPanel.querySelector('#header-description');
+
+        try {
+          if (referenceElement && referenceElement.parentNode === playlistPanel) {
+            playlistPanel.insertBefore(widget, referenceElement);
+          } else {
+            playlistPanel.appendChild(widget);
+          }
+        } catch (err) {
+          console.warn('PlanYT: insertBefore failed, using appendChild fallback', err);
+          try {
+            playlistPanel.appendChild(widget);
+          } catch (err2) {
+            console.warn('PlanYT: appendChild also failed', err2);
+            return;
+          }
+        }
+
+        STATE.initialized = true;
+      } finally {
+        STATE.activeInjectionPromise = null;
+      }
+    })();
+
+    return STATE.activeInjectionPromise;
   }
 
   async function waitForSidebar(maxAttempts = CONFIG.MAX_INIT_ATTEMPTS) {
@@ -99,6 +123,7 @@
     }
 
     STATE.shadowRoot = null;
+    STATE.activeInjectionPromise = null;
   }
 
   function createWidgetContainer() {
@@ -123,13 +148,17 @@
   }
 
   async function renderWidget() {
-    const widgetHost = document.getElementById(CONFIG.WIDGET_HOST_ID);
+    let widgetHost = document.getElementById(CONFIG.WIDGET_HOST_ID);
 
     if (!STATE.shadowRoot || !STATE.shadowRoot.widgetContainer || !widgetHost || !widgetHost.isConnected) {
       console.warn('PlanYT: Widget detached during render, reinjecting safely');
       STATE.initialized = false;
       await injectWidgetSafely();
-      return;
+      
+      widgetHost = document.getElementById(CONFIG.WIDGET_HOST_ID);
+      if (!widgetHost || !widgetHost.isConnected) {
+        return;
+      }
     }
 
     const container = STATE.shadowRoot.widgetContainer;
@@ -291,6 +320,14 @@
 
   function setupNavigationListeners() {
     document.addEventListener('yt-navigate-finish', () => {
+      try {
+        const stale = document.getElementById(CONFIG.WIDGET_HOST_ID);
+        if (stale) {
+          stale.remove();
+        }
+      } catch (err) {
+        console.warn('PlanYT: Error removing stale widget on navigation', err);
+      }
       handlePageChangeDebounced();
     });
 
@@ -628,10 +665,11 @@
 
       const widgetHost = document.getElementById(CONFIG.WIDGET_HOST_ID);
 
-      if (STATE.initialized && (!widgetHost || !widgetHost.isConnected)) {
-        console.warn('PlanYT: Widget detached, reinjecting');
+      // Only reinject if genuinely missing OR detached from live DOM tree
+      if (!widgetHost || !widgetHost.isConnected) {
+        console.warn('PlanYT: Widget missing or detached, reinjecting');
         STATE.initialized = false;
-        injectWidgetSafely();
+        initialize();
       }
     }, 2000);
   }
