@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.png" alt="PlanYT Icon" width="96" />
+  <img src="assets/icon128.png" alt="PlanYT Icon" width="96" />
 </p>
 
 <h1 align="center">PlanYT</h1>
