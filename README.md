@@ -11,8 +11,8 @@
 
 ---
 
-# PlanYT - v1.2.2
-Dynamic Plan Progress Widget Added
+# PlanYT - v1.3.0
+Sub-Task Checkboxes · Smooth Completion Transitions · Bug Fixes
 
 PlanYT is a lightweight Chrome extension that transforms overwhelming YouTube playlists into structured, realistic daily plans — directly inside YouTube.
 
@@ -24,65 +24,64 @@ Just open YouTube and follow your plan.
 
 ---
 
-## The Problem
+## What's New in v1.3
 
-YouTube playlists are:
+### Per-Video Sub-Checkboxes (Major Update)
 
-- Too long  
-- Poorly structured  
-- Hard to track  
-- Easy to abandon  
+Day cards in Custom (time-based) mode now show individual checkboxes for every video segment inside a day.
 
-You start motivated.  
-You quit halfway.
+- Check off individual video segments as you finish them
+- Completing all segments automatically marks the whole day as done
+- Marking the whole day done cascades and checks all segments
+- Unchecking any segment automatically unchecks the day
+- Partial video segments are labeled clearly with a `partial` badge
+- Completed segments show strikethrough text for visual clarity
 
----
-
-## The Solution
-
-PlanYT converts any playlist into a clear daily watch schedule and tracks your completion automatically.
-
-It works where you already are.
-
-Inside YouTube.
+Video-by-Video mode keeps the single day-level checkbox — no unnecessary complexity.
 
 ---
 
-## What’s New in v1.2
+### Playback Speed Support (Major Update)
 
-### Native YouTube Integration (Major Update)
+Custom mode now accounts for your actual watch speed.
 
+- Speed selector with fixed snap points: `0.25×, 0.5×, 0.75×, 1×, 1.25×, 1.5×, 1.75×, 2×`
+- Matches YouTube's native speed options exactly
+- Live hint shows how much content your daily time covers at the selected speed
+- Plans are recalculated using effective duration (`video duration ÷ speed`)
+- Speed is stored on the plan and displayed in plan details
+
+Video-by-Video mode does not include a speed selector — each day is one video regardless of duration.
+
+---
+
+### Plan Mode Selection at Creation (Major Update)
+
+Two distinct modes now available when creating a plan:
+
+#### Video-by-Video Mode
+One video per day. No splitting, no time math. Best for consistency-focused goals where you want a clear daily target.
+
+#### Custom Schedule Mode  
+Set your daily watch time budget and let PlanYT distribute videos (with partial splits for long videos) across your timeline. Best for structured learning with a fixed daily time slot.
+
+---
+
+## Bug Fixes in v1.3
+
+- **Fixed duplicate progress widget** appearing on YouTube playlist pages after navigating from the popup's playlist link. Root cause was a race condition between the `yt-navigate-finish` event and the 2-second health check interval both triggering injection simultaneously. Fixed with an injection lock flag, `isConnected` DOM verification, and stale host cleanup before re-injection.
+
+---
+
+## What's New in v1.2
+
+### Native YouTube Integration
 PlanYT now injects directly into the YouTube interface.
 
 - PlanYT icon appears inside YouTube  
 - Open your planner without reopening the extension popup  
 - Instant access while browsing playlists  
 - Reduced friction in daily usage  
-
-PlanYT now truly lives inside YouTube.
-
----
-
-### Two Planning Modes (Major Update)
-
-You now have flexible ways to structure your learning:
-
-#### 1. Time-Based Mode (Minutes per Day)
-Enter your available daily watch time and PlanYT distributes videos intelligently across days.
-
-Best for structured learning routines.
-
-#### 2. Video-Per-Day Mode
-Set how many videos you want to complete each day.
-
-Best for consistency-focused goals.
-
-#### 3. Custom Flexibility
-Adjust and regenerate plans easily based on your schedule changes.
-
-You control the pace.
-
----
 
 ### Improved State Persistence
 Your last active plan restores automatically.
@@ -104,12 +103,16 @@ Manage multiple playlists simultaneously and switch between them instantly.
 Fetches real playlist duration using a backend proxy.
 
 ### Partial Video Splitting
-Long videos are automatically split across multiple days when needed (in time-based mode).
+Long videos are automatically split across multiple days when needed (in Custom mode).
 
-### Progress Tracking
+### Per-Segment Progress Tracking
+- Individual video segment checkboxes (Custom mode)
 - Visual progress bar  
 - Completion percentage  
 - Day-by-day tracking  
+
+### Playback Speed Awareness
+Plans account for your actual watch speed so daily targets are always realistic.
 
 ### Persistent Storage
 Plans and progress are saved locally in your browser.
@@ -170,17 +173,16 @@ Your data never leaves your system.
 4. Paste a YouTube playlist URL  
 5. Click Fetch Playlist  
 6. Choose your planning mode:
-   - Time-Based (minutes per day)
-   - Videos-Per-Day
-7. Generate Plan  
-
----
+   - **Video-by-Video** — one video per day, no time math
+   - **Custom Schedule** — daily time budget with speed adjustment
+7. *(Custom only)* Enter your daily watch time and select playback speed  
+8. Generate Plan  
 
 ### Manage Progress
 
 - View playlists under My Plans  
 - Switch between plans instantly  
-- Mark days as completed  
+- Check off individual video segments or entire days  
 - Progress updates automatically  
 - Delete plans anytime  
 
