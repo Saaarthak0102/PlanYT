@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.png" alt="PlanYT Icon" width="96" />
+  <img src="assets/icon128.png" alt="PlanYT Icon" width="96" />
 </p>
 
 <h1 align="center">PlanYT</h1>
@@ -11,8 +11,8 @@
 
 ---
 
-# PlanYT - v1.2.0
-Native Integration & Flexible Planning Update
+# PlanYT - v1.2.2
+Dynamic Plan Progress Widget Added
 
 PlanYT is a lightweight Chrome extension that transforms overwhelming YouTube playlists into structured, realistic daily plans — directly inside YouTube.
 
