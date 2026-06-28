@@ -14,7 +14,7 @@
         <img src="../assets/icon128.png" alt="PlanYT" class="header-icon">
         <div class="header-text">
           <h1>PlanYT</h1>
-          <p class="subtitle">Your Youtube, planned</p>
+          <p class="subtitle" data-i18n="subtitle">Your Youtube, planned</p>
         </div>
         <a href="https://github.com/Saaarthak0102/PlanYT" target="_blank" class="github-link" title="View on GitHub">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -26,38 +26,39 @@
 
     <!-- My Plans Section (Minimal) -->
     <section id="plansSection" class="section section-compact">
-      <h3 class="plans-title">My Plans</h3>
+      <h3 class="plans-title" data-i18n="myPlans">My Plans</h3>
       <div id="plansList" class="plans-list">
         <!-- Plans rendered here -->
       </div>
     </section>
 
     <div id="plansFooter" class="plans-footer">
-      <button id="addPlanBtn" class="btn btn-secondary">Add New Plan</button>
+      <button id="addPlanBtn" class="btn btn-secondary" data-i18n="addNewPlan">Add New Plan</button>
     </div>
 
     <!-- Playlist Input Section -->
     <section id="playlistSection" class="section hidden">
       <div class="step-header">
-        <button class="btn-back" id="playlistSectionBackBtn" aria-label="Go back">←</button>
-        <h2>Add New Plan</h2>
+        <button class="btn-back" id="playlistSectionBackBtn" aria-label="Go back" data-i18n-aria="goBack">←</button>
+        <h2 data-i18n="addNewPlan">Add New Plan</h2>
       </div>
       <div class="input-group">
-        <label for="playlistUrlInput">Playlist URL</label>
+        <label for="playlistUrlInput" data-i18n="playlistUrl">Playlist URL</label>
         <input 
           type="text" 
           id="playlistUrlInput" 
           placeholder="https://www.youtube.com/playlist?list=..."
+          data-i18n-placeholder="playlistUrl"
           autocomplete="off"
         >
-        <button id="fetchPlaylistBtn" class="btn btn-primary">Fetch Playlist</button>
+        <button id="fetchPlaylistBtn" class="btn btn-primary" data-i18n="fetchPlaylist">Fetch Playlist</button>
       </div>
     </section>
 
     <!-- Loading Indicator -->
     <div id="loadingIndicator" class="loading hidden">
       <div class="spinner"></div>
-      <p>Fetching playlist data...</p>
+      <p data-i18n="fetchingData">Fetching playlist data...</p>
     </div>
 
     <!-- Error Message -->
@@ -66,27 +67,27 @@
     <!-- Success Screen -->
     <section id="successSection" class="success-screen hidden">
       <div class="success-content">
-        <h2 class="success-title">Plan Generated Successfully</h2>
+        <h2 class="success-title" data-i18n="planGeneratedTitle">Plan Generated Successfully</h2>
         <div class="success-accent" aria-hidden="true"></div>
-        <p class="success-subtext">Your plan is now active.</p>
-        <p class="success-meta">Closing automatically...</p>
+        <p class="success-subtext" data-i18n="planGeneratedSub">Your plan is now active.</p>
+        <p class="success-meta" data-i18n="closingAuto">Closing automatically...</p>
       </div>
     </section>
 
     <!-- Results Section (Hidden by default) -->
     <section id="resultsSection" class="section hidden">
-      <h2>Playlist Summary</h2>
+      <h2 data-i18n="playlistSummary">Playlist Summary</h2>
       <div class="summary-card">
         <div class="summary-item">
-          <span class="label">Title:</span>
+          <span class="label" data-i18n="labelTitle">Title:</span>
           <span id="playlistTitle" class="value">-</span>
         </div>
         <div class="summary-item">
-          <span class="label">Videos:</span>
+          <span class="label" data-i18n="labelVideos">Videos:</span>
           <span id="videoCount" class="value">-</span>
         </div>
         <div class="summary-item">
-          <span class="label">Total Duration:</span>
+          <span class="label" data-i18n="labelTotalDuration">Total Duration:</span>
           <span id="totalDuration" class="value">-</span>
         </div>
       </div>
@@ -94,7 +95,7 @@
       <!-- Progress Bar -->
       <div id="progressSection" class="progress-section hidden">
         <div class="progress-info">
-          <span id="progressLabel" class="progress-label">Progress</span>
+          <span id="progressLabel" class="progress-label" data-i18n="progress">Progress</span>
           <span id="progressPercent" class="progress-percent">0%</span>
         </div>
         <div class="progress-bar-container">
@@ -106,8 +107,8 @@
     <!-- Mode Picker Section (Hidden by default) -->
     <section id="modePickerSection" class="section hidden">
       <div class="step-header">
-        <button class="btn-back" id="modePickerBackBtn" aria-label="Go back">←</button>
-        <h2>Select Plan Mode</h2>
+        <button class="btn-back" id="modePickerBackBtn" aria-label="Go back" data-i18n-aria="goBack">←</button>
+        <h2 data-i18n="selectPlanMode">Select Plan Mode</h2>
       </div>
       <div class="mode-options">
         <button class="mode-card" id="modeVideoByVideoBtn">
@@ -117,8 +118,8 @@
             </svg>
           </div>
           <div class="mode-card-content">
-            <div class="mode-card-title">Video by Video</div>
-            <div class="mode-card-desc">Watch exactly one video per day. No splitting.</div>
+            <div class="mode-card-title" data-i18n="modeVideoByVideoTitle">Video by Video</div>
+            <div class="mode-card-desc" data-i18n="modeVideoByVideoDesc">Watch exactly one video per day. No splitting.</div>
           </div>
         </button>
         <button class="mode-card" id="modeCustomBtn">
@@ -128,8 +129,8 @@
             </svg>
           </div>
           <div class="mode-card-content">
-            <div class="mode-card-title">Custom Schedule</div>
-            <div class="mode-card-desc">Set a daily watch time quota. Videos are split.</div>
+            <div class="mode-card-title" data-i18n="modeCustomTitle">Custom Schedule</div>
+            <div class="mode-card-desc" data-i18n="modeCustomDesc">Set a daily watch time quota. Videos are split.</div>
           </div>
         </button>
       </div>
@@ -138,11 +139,11 @@
     <!-- Planner Input Section (Hidden by default) -->
     <section id="plannerInputSection" class="section hidden">
       <div class="step-header">
-        <button class="btn-back" id="plannerInputBackBtn" aria-label="Go back">←</button>
-        <h2>Daily Watch Time</h2>
+        <button class="btn-back" id="plannerInputBackBtn" aria-label="Go back" data-i18n-aria="goBack">←</button>
+        <h2 data-i18n="dailyWatchTime">Daily Watch Time</h2>
       </div>
       <div class="input-group">
-        <label for="dailyWatchTimeInput">Daily Watch Time (minutes)</label>
+        <label for="dailyWatchTimeInput" data-i18n="dailyWatchTimeLabel">Daily Watch Time (minutes)</label>
         <input 
           type="number" 
           id="dailyWatchTimeInput" 
@@ -150,15 +151,15 @@
           min="1"
           autocomplete="off"
         >
-        <button id="plannerInputNextBtn" class="btn btn-primary">Next</button>
+        <button id="plannerInputNextBtn" class="btn btn-primary" data-i18n="next">Next</button>
       </div>
     </section>
 
     <!-- Speed Picker Section (Hidden by default) -->
     <section id="speedPickerSection" class="section hidden">
       <div class="step-header">
-        <button class="btn-back" id="speedPickerBackBtn" aria-label="Go back">←</button>
-        <h2>Select Playback Speed</h2>
+        <button class="btn-back" id="speedPickerBackBtn" aria-label="Go back" data-i18n-aria="goBack">←</button>
+        <h2 data-i18n="selectPlaybackSpeed">Select Playback Speed</h2>
       </div>
       <div class="speed-picker-container">
         <div class="speed-display" id="speedValueDisplay">1×</div>
@@ -185,41 +186,41 @@
           </div>
         </div>
         
-        <div class="speed-hint" id="speedHintText">
+        <div class="speed-hint" id="speedHintText" data-i18n="speedHint">
           Your plan duration will adjust accordingly.
         </div>
       </div>
-      <button id="speedPickerNextBtn" class="btn btn-primary">Next</button>
+      <button id="speedPickerNextBtn" class="btn btn-primary" data-i18n="next">Next</button>
     </section>
 
     <!-- Confirm Section (Hidden by default) -->
     <section id="confirmSection" class="section hidden">
       <div class="step-header">
-        <button class="btn-back" id="confirmBackBtn" aria-label="Go back">←</button>
-        <h2>Confirm Plan</h2>
+        <button class="btn-back" id="confirmBackBtn" aria-label="Go back" data-i18n-aria="goBack">←</button>
+        <h2 data-i18n="confirmPlan">Confirm Plan</h2>
       </div>
       <div class="confirm-summary-card">
         <div class="confirm-item">
-          <span class="label">Plan Mode:</span>
+          <span class="label" data-i18n="labelPlanMode">Plan Mode:</span>
           <span id="confirmMode" class="value">-</span>
         </div>
         <div class="confirm-item" id="confirmDailyTimeRow">
-          <span class="label">Daily Watch Time:</span>
+          <span class="label" data-i18n="labelDailyWatchTime">Daily Watch Time:</span>
           <span id="confirmDailyTime" class="value">-</span>
         </div>
         <div class="confirm-item" id="confirmSpeedRow">
-          <span class="label">Playback Speed:</span>
+          <span class="label" data-i18n="labelPlaybackSpeed">Playback Speed:</span>
           <span id="confirmSpeed" class="value">-</span>
         </div>
       </div>
-      <button id="finalGenerateBtn" class="btn btn-primary">Generate Plan</button>
+      <button id="finalGenerateBtn" class="btn btn-primary" data-i18n="generatePlan">Generate Plan</button>
     </section>
 
     <!-- Generated Plan Section (Hidden by default) -->
     <section id="planSection" class="section hidden">
       <div class="plan-header">
-        <h2>Your Watch Plan</h2>
-        <button id="resetBtn" class="btn btn-small">Reset</button>
+        <h2 data-i18n="yourWatchPlan">Your Watch Plan</h2>
+        <button id="resetBtn" class="btn btn-small" data-i18n="reset">Reset</button>
       </div>
       <div id="planContainer" class="plan-container">
         <!-- Dynamic day-wise checklist will be rendered here -->
@@ -228,7 +229,7 @@
 
     <!-- Footer Credit -->
     <footer id="mainFooter" class="footer">
-      <p>Made with ❤️ by <a href="https://github.com/Saaarthak0102" target="_blank">Saaarthak0102</a></p>
+      <p><span data-i18n="madeWith">Made with ❤️ by</span> <a href="https://github.com/Saaarthak0102" target="_blank">Saaarthak0102</a></p>
     </footer>
   </div>
 

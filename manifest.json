@@ -14,7 +14,8 @@
       "matches": [ "https://www.youtube.com/*" ],
       "run_at": "document_end"
    } ],
-   "description": "Your Youtube, planned.",
+   "default_locale": "en",
+   "description": "__MSG_extensionDescription__",
    "host_permissions": [ "https://www.youtube.com/*", "https://yt-extension-z6so.vercel.app/*" ],
    "icons": {
       "128": "assets/icon128.png",
@@ -24,7 +25,7 @@
    },
    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmBPL5f2tpBvbEX4ikUwSQa0Pr4ykcgAm05dt2PCLMnJFdhB8ry2T5O4b7WrFfs/LBv2v6BWduxvGM+m4nWKjkNXadwPd4tvdf/LgIMN1q6JUD5UJohgTrOPoRzyQQQIY0XF0I2KclqhLr7BsBasJgRMzOIhPHMV/JZ2jvJhu8auDE2wYe80QrM69/CFqGoc2x2IqAaBfjCxZfVZApoQ7ExLelPZoKIImQN7GKA4vbEms02+xc6MzkWFebi6BoGGwx9biehz2d+VSxFcOZZ0wmRgDR1ZAs6P4LIQ/GQHsgWFitCIm/sD1M390CfGv2dVUm7k+UnjXs4sY0TSjzUEUCwIDAQAB",
    "manifest_version": 3,
-   "name": "PlanYT - Youtube Playlist Planner & Progress Tracker",
+   "name": "__MSG_extensionName__",
    "permissions": [ "storage" ],
    "short_name": "PlanYT",
    "update_url": "https://clients2.google.com/service/update2/crx",

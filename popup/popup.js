@@ -1,4 +1,32 @@
 /**
+ * i18n Initialization
+ * Applies Chrome i18n translations to all elements with data-i18n attributes.
+ * Must run before any other UI code.
+ */
+function applyI18n() {
+  // Text content
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const msg = chrome.i18n.getMessage(key);
+    if (msg) el.textContent = msg;
+  });
+  // Placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const msg = chrome.i18n.getMessage(key);
+    if (msg) el.placeholder = msg;
+  });
+  // Aria labels
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    const key = el.getAttribute('data-i18n-aria');
+    const msg = chrome.i18n.getMessage(key);
+    if (msg) el.setAttribute('aria-label', msg);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', applyI18n);
+
+/**
  * popup.js
  * Main orchestration file - handles UI interactions and coordinates utility modules
  */
