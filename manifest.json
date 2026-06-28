@@ -29,7 +29,7 @@
    "permissions": [ "storage" ],
    "short_name": "PlanYT",
    "update_url": "https://clients2.google.com/service/update2/crx",
-   "version": "1.3",
+   "version": "1.3.1",
    "web_accessible_resources": [ {
       "matches": [ "https://www.youtube.com/*" ],
       "resources": [ "assets/icon32.png" ]
