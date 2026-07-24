@@ -95,8 +95,15 @@ header .header-text {
   text-align: left;
 }
 
-.github-link {
+.header-actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sponsor-link,
+.github-link {
   color: var(--yt-text-secondary);
   transition: color var(--yt-transition);
   display: flex;
@@ -104,10 +111,15 @@ header .header-text {
   text-decoration: none;
 }
 
+.sponsor-link:hover {
+  color: var(--yt-accent);
+}
+
 .github-link:hover {
   color: var(--yt-text-primary);
 }
 
+.sponsor-link svg,
 .github-link svg {
   width: 20px;
   height: 20px;
