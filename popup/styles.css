@@ -1063,3 +1063,77 @@ html {
   color: var(--yt-text-primary);
   font-size: 13px;
 }
+
+/* ========================================
+   Rating Banner
+   ======================================== */
+.rating-banner {
+  padding: var(--yt-space-md) var(--yt-space-lg);
+  background-color: rgba(80, 0, 0, 0.2);
+  border: 1px solid rgba(80, 0, 0, 0.4);
+  border-radius: var(--yt-radius-md);
+  margin-bottom: var(--yt-space-md);
+}
+
+.rating-banner.hidden {
+  display: none;
+}
+
+.rating-banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--yt-space-sm);
+}
+
+.rating-banner-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--yt-text-primary);
+  margin: 0;
+}
+
+.rating-banner-close {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--yt-radius-full);
+  border: 1px solid rgba(255, 68, 68, 0.5);
+  background-color: rgba(255, 68, 68, 0.15);
+  color: var(--yt-error);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--yt-transition);
+}
+
+.rating-banner-close:hover {
+  background-color: rgba(255, 68, 68, 0.35);
+  border-color: rgba(255, 68, 68, 0.85);
+}
+
+.rating-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--yt-space-md);
+  margin-top: var(--yt-space-md);
+}
+
+.rating-banner-link {
+  background: none;
+  border: none;
+  color: var(--yt-text-tertiary);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color var(--yt-transition);
+}
+
+.rating-banner-link:hover {
+  color: var(--yt-text-secondary);
+}

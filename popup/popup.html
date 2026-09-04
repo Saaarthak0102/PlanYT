@@ -31,6 +31,18 @@
       </div>
     </header>
 
+    <!-- Rating Banner Section -->
+    <section id="ratingBanner" class="rating-banner hidden">
+      <div class="rating-banner-content">
+        <h3 class="rating-banner-title">Enjoying PlanYT?</h3>
+        <button id="ratingDismissBtn" class="rating-banner-close" aria-label="Dismiss">✕</button>
+      </div>
+      <div class="rating-banner-actions">
+        <button id="ratingRateBtn" class="btn btn-small btn-primary">Rate us</button>
+        <button id="ratingNeverBtn" class="rating-banner-link">Don't ask again</button>
+      </div>
+    </section>
+
     <!-- My Plans Section (Minimal) -->
     <section id="plansSection" class="section section-compact">
       <h3 class="plans-title" data-i18n="myPlans">My Plans</h3>
@@ -246,6 +258,7 @@
   <script src="../core/api.js"></script>
   <script src="../core/planner.js"></script>
   <script src="../core/plans.js"></script>
+  <script src="ratingPrompt.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
