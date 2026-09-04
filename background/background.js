@@ -50,6 +50,7 @@ console.log('PlanYT: Background service worker initialized');
 
 // Handle installation and updates for rating prompt feature
 chrome.runtime.onInstalled.addListener((details) => {
+  setUninstallRedirect();
   chrome.storage.local.get(['installDate', 'playlistPlans', 'ratingPrompt'], (result) => {
     const updates = {};
     
@@ -85,3 +86,15 @@ chrome.runtime.onInstalled.addListener((details) => {
     }
   });
 });
+
+function setUninstallRedirect() {
+  const version = chrome.runtime.getManifest().version;
+  chrome.runtime.setUninstallURL(
+    `https://planyt.vercel.app/uninstall?v=${version}&src=ext`,
+    () => { if (chrome.runtime.lastError) console.error(chrome.runtime.lastError); }
+  );
+}
+
+chrome.runtime.onStartup.addListener(() => {
+  setUninstallRedirect();
+}); 
