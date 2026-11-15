@@ -1,6 +1,6 @@
 # Privacy Policy for PlanYT
 
-**Last Updated: February 2026**
+**Last Updated: November 2026**
 
 ## 1. Overview
 
@@ -19,6 +19,8 @@ The extension may access and process the following data locally within your brow
 - YouTube playlist metadata (e.g., video titles, durations, and playlist structure)
 - User-created planning configurations
 - Progress tracking information related to playlist completion
+
+As of v1.4, PlanYT also reads your locally saved plans while you browse YouTube playlist pages so it can show your progress card and highlight completed videos, and it writes your completion ticks back to the same local storage. This happens only inside your browser.
 
 This data is processed only to provide the core functionality of the extension.
 
