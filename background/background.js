@@ -34,7 +34,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Create a plan for current playlist: prefill popup with URL and trigger fetch
   if (message.type === 'CREATE_PLAN_FOR_PLAYLIST') {
-    const playlistUrl = message.playlistUrl || window.location?.href || '';
+    const playlistUrl = message.playlistUrl || (sender && sender.tab && sender.tab.url) || '';
     const playlistId = message.playlistId || null;
     const pending = { type: 'createPlan', playlistUrl, playlistId };
     chrome.storage.local.set({ pendingPopupAction: pending }, () => {

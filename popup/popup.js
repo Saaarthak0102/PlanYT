@@ -52,7 +52,6 @@ const elements = {
   successSection: document.getElementById('successSection'),
   mainHeader: document.getElementById('mainHeader'),
   mainFooter: document.getElementById('mainFooter'),
-  plansFooter: document.getElementById('plansFooter'),
   
   // Results Section
   resultsSection: document.getElementById('resultsSection'),
@@ -93,9 +92,22 @@ const elements = {
   confirmMode: document.getElementById('confirmMode'),
   confirmDailyTimeRow: document.getElementById('confirmDailyTimeRow'),
   confirmDailyTime: document.getElementById('confirmDailyTime'),
+  confirmDaysRow: document.getElementById('confirmDaysRow'),
+  confirmDays: document.getElementById('confirmDays'),
   confirmSpeedRow: document.getElementById('confirmSpeedRow'),
   confirmSpeed: document.getElementById('confirmSpeed'),
   
+  // Dashboard
+  dashboardSection: document.getElementById('dashboardSection'),
+  dashboardBackBtn: document.getElementById('dashboardBackBtn'),
+  dashboardTitle: document.getElementById('dashboardTitle'),
+  donutFill: document.getElementById('donutFill'),
+  donutPercent: document.getElementById('donutPercent'),
+  statDaysLeft: document.getElementById('statDaysLeft'),
+  statVideosDone: document.getElementById('statVideosDone'),
+  statTimeLeft: document.getElementById('statTimeLeft'),
+  startDayBtn: document.getElementById('startDayBtn'),
+
   // Plan Display
   planSection: document.getElementById('planSection'),
   planContainer: document.getElementById('planContainer'),
@@ -112,6 +124,7 @@ let appState = {
   currentPlanId: null,
   dailyWatchTime: 0,
   isAddingNewPlan: false,
+  dashboardOpen: false,
   isFetching: false,
   isUpdatingCompletion: false,
   plansCache: [],
@@ -130,16 +143,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check for a pending action placed by the content-script/widget
   const pending = await getPendingPopupAction();
 
+  await migrateLegacyStorage();
+
   // Load plans first so we can resolve open/create actions without flashing old state
   await loadAndDisplayPlans();
 
   if (pending) {
     await handlePendingPopupAction(pending);
-  } else {
-    await restoreActivePlan();
   }
 
   renderUI();
+  setupStorageSync();
 });
 
 // Retrieve and consume any pending popup action from storage
@@ -170,7 +184,7 @@ async function handlePendingPopupAction(pending) {
   try {
     if (pending.type === 'openPlan') {
       const playlistId = pending.playlistId || null;
-      if (!playlistId) return await restoreActivePlan();
+      if (!playlistId) return;
 
       // Try to find a matching saved plan by playlistId
       const match = (appState.plansCache || []).find(p => {
@@ -184,12 +198,11 @@ async function handlePendingPopupAction(pending) {
 
       if (match) {
         // Select and render the matched plan without showing previous plan first
-        await handlePlanSelect(match.id, match);
+        await handlePlanSelect(match.id);
         return;
       }
 
-      // Not found: fallback to normal restoration
-      await restoreActivePlan();
+      // Not found: stay on the plans list
       return;
     }
 
@@ -239,6 +252,13 @@ function attachEventListeners() {
 
   // Add New Plan
   elements.addPlanBtn.addEventListener('click', handleAddNewPlan);
+
+  // Dashboard
+  elements.dashboardBackBtn.addEventListener('click', () => {
+    appState.dashboardOpen = false;
+    renderUI();
+  });
+  elements.startDayBtn.addEventListener('click', handleStartDay);
 
   // Fetch Playlist
   elements.fetchPlaylistBtn.addEventListener('click', handleFetchPlaylist);
@@ -293,11 +313,7 @@ function attachEventListeners() {
 
   // Speed Picker Back & Next
   elements.speedPickerBackBtn.addEventListener('click', () => {
-    if (appState.mode === 'video-by-video') {
-      appState.wizardStep = 'mode-picker';
-    } else {
-      appState.wizardStep = 'daily-time';
-    }
+    appState.wizardStep = 'daily-time';
     renderUI();
   });
 
@@ -308,11 +324,7 @@ function attachEventListeners() {
 
   // Confirm Back
   elements.confirmBackBtn.addEventListener('click', () => {
-    if (appState.mode === 'video-by-video') {
-      appState.wizardStep = 'mode-picker';
-    } else {
-      appState.wizardStep = 'speed-picker';
-    }
+    appState.wizardStep = appState.mode === 'video-by-video' ? 'mode-picker' : 'speed-picker';
     renderUI();
   });
 
@@ -368,16 +380,6 @@ function updateSpeedHint() {
     const dailyMinutes = appState.dailyWatchTime || 30;
     const effective = Math.round(dailyMinutes * speed);
     elements.speedHintText.textContent = `Your ${dailyMinutes} min/day becomes effectively ~${effective} min of content`;
-  } else {
-    // Video-by-Video mode
-    if (appState.playlistData && appState.playlistData.totalDuration && appState.playlistData.videoCount) {
-      const avgDuration = appState.playlistData.totalDuration / appState.playlistData.videoCount;
-      const original = Math.round(avgDuration);
-      const effective = Math.round(avgDuration / speed);
-      elements.speedHintText.textContent = `An average video of ${original} min will take ~${effective} min of daily watch time`;
-    } else {
-      elements.speedHintText.textContent = `Your plan duration will adjust according to speed.`;
-    }
   }
 }
 
@@ -386,7 +388,8 @@ function renderUI() {
 
   if (appState.isAddingNewPlan) {
     hideSection(elements.plansSection);
-    hideSection(elements.plansFooter);
+    hideSection(elements.addPlanBtn);
+    hideSection(elements.dashboardSection);
     hideSection(elements.planSection);
     hideSection(elements.progressSection);
     hideSection(elements.confirmSection);
@@ -438,7 +441,11 @@ function renderUI() {
       if (appState.mode === 'video-by-video') {
         hideSection(elements.confirmDailyTimeRow);
         hideSection(elements.confirmSpeedRow);
+        showSection(elements.confirmDaysRow);
+        const pd = appState.playlistData || {};
+        elements.confirmDays.textContent = (pd.videos && pd.videos.length) || pd.videoCount || 0;
       } else {
+        hideSection(elements.confirmDaysRow);
         showSection(elements.confirmDailyTimeRow);
         showSection(elements.confirmSpeedRow);
         elements.confirmDailyTime.textContent = formatMinutes(appState.dailyWatchTime);
@@ -448,22 +455,28 @@ function renderUI() {
     return;
   }
 
-  showSection(elements.plansSection);
-  showSection(elements.plansFooter);
   hideSection(elements.playlistSection);
   hideSection(elements.modePickerSection);
   hideSection(elements.plannerInputSection);
   hideSection(elements.speedPickerSection);
   hideSection(elements.confirmSection);
+  hideSection(elements.resultsSection);
+  hideSection(elements.progressSection);
 
-  if (appState.currentPlanId && appState.plan && appState.plan.length > 0) {
-    displayPlaylistSummary(appState.playlistData);
+  const hasPlan = appState.currentPlanId && appState.plan && appState.plan.length > 0;
+
+  if (appState.dashboardOpen && hasPlan) {
+    hideSection(elements.plansSection);
+    hideSection(elements.addPlanBtn);
+    showSection(elements.dashboardSection);
+    renderDashboard();
     renderPlan(appState.plan);
     showSection(elements.planSection);
-    updateProgressBar(appState.currentPlanId);
   } else {
-    hideSection(elements.resultsSection);
-    hideSection(elements.progressSection);
+    appState.dashboardOpen = false;
+    showSection(elements.plansSection);
+    showSection(elements.addPlanBtn);
+    hideSection(elements.dashboardSection);
     hideSection(elements.planSection);
   }
 }
@@ -475,6 +488,7 @@ function clearActivePlanUI() {
   hideSection(elements.resultsSection);
   hideSection(elements.progressSection);
   hideSection(elements.planSection);
+  hideSection(elements.dashboardSection);
 }
 
 function scrollToPlannerInput() {
@@ -531,6 +545,7 @@ function applyPlanToState(plan) {
 
 function handleAddNewPlan() {
   appState.isAddingNewPlan = true;
+  appState.dashboardOpen = false;
   appState.playlistData = null;
   appState.plan = [];
   appState.wizardStep = 'enter-url';
@@ -576,61 +591,6 @@ async function loadAndDisplayPlans() {
   }
 }
 
-async function restoreActivePlan() {
-  if (!appState.currentPlanId) {
-    clearActivePlanUI();
-    return;
-  }
-
-  if (appState.currentPlanId) {
-    const activePlan = appState.plansCache.find(plan => plan.id === appState.currentPlanId) || await getActivePlan();
-    if (activePlan) {
-      // Merge legacy saved completion (planData) when it matches the active plan
-      try {
-        const legacyPlanData = await getFromStorage('planData');
-        const legacyHasPlan = legacyPlanData && Array.isArray(legacyPlanData.plan) && legacyPlanData.plan.length > 0;
-        const matchesByTitle = legacyPlanData?.playlistData?.title && legacyPlanData.playlistData.title === activePlan.title;
-        const matchesByPlaylistId = legacyPlanData?.playlistData?.id && legacyPlanData.playlistData.id === activePlan.playlistUrl;
-        const sameLength = Array.isArray(activePlan.planData) && legacyPlanData?.plan?.length === activePlan.planData.length;
-
-        if (legacyHasPlan && sameLength && (matchesByTitle || matchesByPlaylistId)) {
-          activePlan.planData = legacyPlanData.plan;
-          await updatePlanData(activePlan.id, legacyPlanData.plan);
-        }
-      } catch (error) {
-        console.error('Error syncing legacy plan data:', error);
-      }
-      activePlan.progress = deriveProgressFromPlanData(activePlan.planData);
-      applyPlanToState(activePlan);
-      return;
-    }
-  }
-
-  const savedPlanData = await getFromStorage('planData');
-  if (savedPlanData && savedPlanData.plan && savedPlanData.plan.length > 0) {
-    appState.playlistData = savedPlanData.playlistData;
-    appState.plan = savedPlanData.plan;
-    appState.dailyWatchTime = savedPlanData.dailyWatchTime;
-    appState.currentPlanId = appState.currentPlanId || 'legacy-plan';
-    appState.plansCache = appState.plansCache.length > 0 ? appState.plansCache : [
-      {
-        id: 'legacy-plan',
-        title: savedPlanData.playlistData?.title || 'Saved Plan',
-        playlistUrl: savedPlanData.playlistData?.url || savedPlanData.playlistData?.id || '',
-        totalVideos: savedPlanData.playlistData?.videoCount || 0,
-        totalDays: savedPlanData.plan.length,
-        dailyMinutes: savedPlanData.dailyWatchTime,
-        progress: deriveProgressFromPlanData(savedPlanData.plan),
-        planData: savedPlanData.plan
-      }
-    ];
-    renderPlansList(appState.plansCache, appState.currentPlanId);
-    return;
-  }
-
-  clearActivePlanUI();
-}
-
 function renderPlansList(plans, activePlanId) {
   elements.plansList.innerHTML = '';
 
@@ -646,7 +606,7 @@ function renderPlansList(plans, activePlanId) {
     const planItem = document.createElement('div');
     planItem.className = `plan-item ${plan.id === activePlanId ? 'active' : ''}`;
     planItem.dataset.planId = plan.id;
-    planItem.addEventListener('click', () => handlePlanSelect(plan.id, plan));
+    planItem.addEventListener('click', () => handlePlanSelect(plan.id));
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'plan-item-delete';
@@ -688,17 +648,24 @@ function renderPlansList(plans, activePlanId) {
   });
 }
 
-async function handlePlanSelect(planId, plan) {
+async function handlePlanSelect(planId) {
   try {
+    const fresh = await getPlanById(planId);
+    if (!fresh) {
+      showError('Plan not found');
+      await loadAndDisplayPlans();
+      return;
+    }
     await setActivePlan(planId);
     appState.currentPlanId = planId;
     appState.isAddingNewPlan = false;
+    appState.dashboardOpen = true;
 
-    applyPlanToState(plan);
-    
+    applyPlanToState(fresh);
+
     // Reload plans list to update active state
     await loadAndDisplayPlans();
-    
+
     renderUI();
   } catch (error) {
     showError('Failed to load plan: ' + error.message);
@@ -716,20 +683,10 @@ async function handlePlanDelete(planId) {
 
     if (appState.currentPlanId === planId) {
       appState.currentPlanId = result.activePlanId;
-
-      if (appState.currentPlanId) {
-        const nextPlan = appState.plansCache.find(p => p.id === appState.currentPlanId) || await getActivePlan();
-        if (nextPlan) {
-          applyPlanToState(nextPlan);
-        } else {
-          appState.plan = [];
-          appState.playlistData = null;
-        }
-      } else {
-        appState.plan = [];
-        appState.playlistData = null;
-      }
+      appState.plan = [];
+      appState.playlistData = null;
     }
+    appState.dashboardOpen = false;
 
     await loadAndDisplayPlans();
     renderUI();
@@ -738,35 +695,68 @@ async function handlePlanDelete(planId) {
   }
 }
 
-function updateProgressBar(planId) {
-  if (!planId || !appState.plan || appState.plan.length === 0) {
-    hideSection(elements.progressSection);
-    return;
+function renderDashboard() {
+  const progress = PlanYTProgress.derive(appState.plan);
+  const data = appState.playlistData || {};
+
+  // Title (clickable -> playlist on YouTube)
+  elements.dashboardTitle.textContent = data.title || '';
+  elements.dashboardTitle.title = data.url ? 'Open playlist on YouTube' : '';
+  elements.dashboardTitle.onclick = data.url ? () => chrome.tabs.create({ url: data.url }) : null;
+
+  // Donut
+  const circumference = 2 * Math.PI * 50;
+  elements.donutFill.setAttribute('stroke-dasharray', `${(progress.percent / 100) * circumference} ${circumference}`);
+  elements.donutPercent.textContent = progress.percent + '%';
+
+  // Stats
+  elements.statDaysLeft.textContent = Math.max(0, progress.totalDays - progress.completedDays);
+  elements.statVideosDone.textContent = `${progress.completedVideos}/${progress.totalVideos}`;
+  elements.statTimeLeft.textContent = formatMinutes(progress.remainingMinutes);
+
+  // Start / continue button
+  const next = PlanYTProgress.nextSegment(appState.plan);
+  if (!next) {
+    elements.startDayBtn.textContent = 'Plan completed \uD83C\uDF89';
+    elements.startDayBtn.disabled = true;
+  } else {
+    const day = appState.plan[next.dayIndex];
+    const dayStarted = day.videos.some(v => v.completed);
+    elements.startDayBtn.textContent = `${dayStarted ? 'Continue' : 'Start'} Day ${day.day}`;
+    elements.startDayBtn.disabled = false;
   }
-  
-  try {
-    // Find the plan to get progress data
-    const plans = document.querySelectorAll('.plan-item');
-    let currentProgress = null;
-    
-    plans.forEach(item => {
-      if (item.dataset.planId === planId) {
-        // The progress is in appState (from the loaded plan)
+}
+
+function handleStartDay() {
+  const next = PlanYTProgress.nextSegment(appState.plan);
+  if (!next) return;
+  const playlistId = extractPlaylistId(appState.playlistData && appState.playlistData.url);
+  const url = PlanYTProgress.segmentUrl(next.segment, playlistId);
+  if (url) chrome.tabs.create({ url });
+}
+
+// Keep an open popup in sync with changes made from the YouTube widget
+function setupStorageSync() {
+  chrome.storage.onChanged.addListener(async (changes, area) => {
+    if (area !== 'local' || !changes.playlistPlans) return;
+    if (appState.isAddingNewPlan || appState.isUpdatingCompletion) return;
+    try {
+      await loadAndDisplayPlans();
+      if (appState.dashboardOpen && appState.currentPlanId) {
+        const fresh = await getPlanById(appState.currentPlanId);
+        if (!fresh) {
+          appState.dashboardOpen = false;
+        } else if (JSON.stringify(fresh.planData) !== JSON.stringify(appState.plan)) {
+          applyPlanToState(fresh);
+        } else {
+          return;
+        }
+        renderUI();
       }
-    });
-    
-    const progress = deriveProgressFromPlanData(appState.plan);
-    const progressPercent = progress.percent;
-    
-    // Update UI
-    elements.progressBar.style.width = progressPercent + '%';
-    elements.progressPercent.textContent = progressPercent + '%';
-    
-    showSection(elements.progressSection);
-  } catch (error) {
-    console.error('Error updating progress bar:', error);
-    hideSection(elements.progressSection);
-  }
+    } catch (error) {
+      console.error('Storage sync failed:', error);
+    }
+  });
 }
 
 // ========================================
@@ -872,15 +862,6 @@ async function handleGeneratePlan() {
     appState.plan = plan;
     appState.dailyWatchTime = dailyTime;
 
-    // Save to storage for persistence (legacy + compatibility)
-    await saveToStorage('planData', {
-      playlistData: appState.playlistData,
-      plan: appState.plan,
-      dailyWatchTime: appState.dailyWatchTime,
-      playbackSpeed: appState.mode === 'video-by-video' ? null : speed,
-      mode: appState.mode
-    });
-    
     // Save as a new plan in the plans system (atomic activePlanId update)
     const newPlan = await createPlan(
       appState.playlistData,
@@ -957,7 +938,7 @@ function showSuccessScreen() {
   hideSection(elements.plannerInputSection);
   hideSection(elements.planSection);
   hideSection(elements.loadingIndicator);
-  hideSection(elements.plansFooter);
+  hideSection(elements.dashboardSection);
   hideSection(elements.mainHeader);
   hideSection(elements.mainFooter);
   elements.successSection.classList.remove('hidden');
@@ -1089,8 +1070,8 @@ function createDayCard(dayData, index) {
     const videoItem = document.createElement('li');
     videoItem.className = `video-item ${video.completed ? 'video-completed' : ''}`;
     
-    if (appState.mode === 'custom') {
-      // Create sub-checkbox
+    {
+      // Create video checkbox (all modes)
       const videoCheckbox = document.createElement('input');
       videoCheckbox.type = 'checkbox';
       videoCheckbox.className = 'video-checkbox';
@@ -1134,24 +1115,16 @@ function createDayCard(dayData, index) {
       
       contentContainer.appendChild(metaDiv);
       videoItem.appendChild(contentContainer);
-    } else {
-      // Video-by-video mode
-      let videoText = video.title;
-      if (video.isPartial) {
-        const startTimeStr = video.startTime ? formatMinutes(video.startTime) : '0:00';
-        const endTimeStr = video.endTime ? formatMinutes(video.endTime) : 'end';
-        videoText += ` (${startTimeStr} - ${endTimeStr})`;
-      }
-      videoText += ` [${formatMinutes(video.duration)}]`;
-      videoItem.textContent = videoText;
     }
-    
+
     videoList.appendChild(videoItem);
   });
   
   card.appendChild(videoList);
   
-  // Checkbox for completion
+  // Day-level checkbox only for custom plans (video-by-video has one video per day)
+  if (appState.mode !== 'custom') return card;
+
   const checkboxContainer = document.createElement('div');
   checkboxContainer.className = 'checkbox-container';
   
@@ -1192,8 +1165,7 @@ async function handleVideoCompletion(dayIndex, videoIndex, completed) {
       await loadAndDisplayPlans();
     }
 
-    // Update progress bar
-    updateProgressBar(appState.currentPlanId);
+    renderDashboard();
 
     // Auto-scroll if the day was completed
     if (allCompleted) {
@@ -1229,8 +1201,7 @@ async function handleDayCompletion(dayIndex, completed) {
       await loadAndDisplayPlans();
     }
     
-    // Update progress bar
-    updateProgressBar(appState.currentPlanId);
+    renderDashboard();
     
     // Auto-scroll to next incomplete day
     setTimeout(scrollToFirstIncompleteDay, 100);

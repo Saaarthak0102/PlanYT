@@ -17,6 +17,7 @@
           <p class="subtitle" data-i18n="subtitle">Your Youtube, planned</p>
         </div>
         <div class="header-actions">
+          <button id="addPlanBtn" class="btn-add-plan" type="button" data-i18n="addPlan">+ Add plan</button>
           <a href="https://rzp.io/rzp/5Ar1csX" target="_blank" rel="noopener noreferrer" class="sponsor-link" aria-label="Support PlanYT on GitHub Sponsors" title="Support PlanYT">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -51,9 +52,40 @@
       </div>
     </section>
 
-    <div id="plansFooter" class="plans-footer">
-      <button id="addPlanBtn" class="btn btn-secondary" data-i18n="addNewPlan">Add New Plan</button>
-    </div>
+    <!-- Plan Dashboard (shown when a plan is opened) -->
+    <section id="dashboardSection" class="section hidden">
+      <div class="step-header">
+        <button class="btn-back" id="dashboardBackBtn" aria-label="All plans" data-i18n-aria="allPlans">&larr;</button>
+        <h2 id="dashboardTitle" class="dashboard-title">-</h2>
+      </div>
+      <div class="dash-top">
+        <div class="donut-wrap">
+          <svg id="donut" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="donut-track" cx="60" cy="60" r="50"></circle>
+            <circle id="donutFill" class="donut-fill" cx="60" cy="60" r="50" transform="rotate(-90 60 60)"></circle>
+          </svg>
+          <div class="donut-center">
+            <span id="donutPercent" class="donut-percent">0%</span>
+            <span class="donut-label" data-i18n="done">done</span>
+          </div>
+        </div>
+        <div class="dash-stats">
+          <div class="stat-tile">
+            <span id="statDaysLeft" class="stat-value">-</span>
+            <span class="stat-label" data-i18n="daysLeft">Days left</span>
+          </div>
+          <div class="stat-tile">
+            <span id="statVideosDone" class="stat-value">-</span>
+            <span class="stat-label" data-i18n="videosDone">Videos done</span>
+          </div>
+          <div class="stat-tile">
+            <span id="statTimeLeft" class="stat-value">-</span>
+            <span class="stat-label" data-i18n="watchTimeLeft">Watch time left</span>
+          </div>
+        </div>
+      </div>
+      <button id="startDayBtn" class="btn btn-primary">Start Day 1</button>
+    </section>
 
     <!-- Playlist Input Section -->
     <section id="playlistSection" class="section hidden">
@@ -223,6 +255,10 @@
           <span class="label" data-i18n="labelPlanMode">Plan Mode:</span>
           <span id="confirmMode" class="value">-</span>
         </div>
+        <div class="confirm-item" id="confirmDaysRow">
+          <span class="label" data-i18n="labelDays">Days:</span>
+          <span id="confirmDays" class="value">-</span>
+        </div>
         <div class="confirm-item" id="confirmDailyTimeRow">
           <span class="label" data-i18n="labelDailyWatchTime">Daily Watch Time:</span>
           <span id="confirmDailyTime" class="value">-</span>
@@ -257,6 +293,7 @@
   <script src="../core/timeConverter.js"></script>
   <script src="../core/api.js"></script>
   <script src="../core/planner.js"></script>
+  <script src="../core/progress.js"></script>
   <script src="../core/plans.js"></script>
   <script src="ratingPrompt.js"></script>
   <script src="popup.js"></script>

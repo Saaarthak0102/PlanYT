@@ -36,7 +36,9 @@ module.exports = async (req, res) => {
 
   try {
     // Rate limiting check
-    const clientIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIp = (forwarded ? String(forwarded).split(',')[0].trim() : null) ||
+      (req.socket && req.socket.remoteAddress) || 'unknown';
     if (!checkRateLimit(clientIp)) {
       return res.status(429).json({
         error: 'Too many requests. Please wait a moment and try again.'
@@ -196,12 +198,23 @@ async function fetchPlaylistData(playlistId, apiKey) {
     // Step 3: Get video details including durations
     const videos = await fetchVideoDurations(videoIds, apiKey);
     
-    // Step 4: Parse ISO-8601 durations to minutes
-    const videosWithMinutes = videos.map(video => ({
-      id: video.id,
-      title: video.title,
-      durationMinutes: parseISO8601Duration(video.duration)
-    }));
+    // Step 4: Re-map to playlist order (the videos endpoint does not guarantee order,
+    // and drops duplicates/unavailable videos), then parse durations to minutes
+    const byId = new Map(videos.map(video => [video.id, video]));
+    const videosWithMinutes = videoIds
+      .filter(id => byId.has(id))
+      .map(id => {
+        const video = byId.get(id);
+        return {
+          id: video.id,
+          title: video.title,
+          durationMinutes: parseISO8601Duration(video.duration)
+        };
+      });
+
+    if (videosWithMinutes.length === 0) {
+      throw createError('No available videos in this playlist', 400);
+    }
     
     return {
       title: playlistTitle,
@@ -312,17 +325,18 @@ function parseISO8601Duration(duration) {
     return 0;
   }
 
-  const matches = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  const matches = duration.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   
   if (!matches) {
     return 0;
   }
 
-  const hours = parseInt(matches[1] || 0);
-  const minutes = parseInt(matches[2] || 0);
-  const seconds = parseInt(matches[3] || 0);
+  const daysPart = parseInt(matches[1] || 0);
+  const hours = parseInt(matches[2] || 0);
+  const minutes = parseInt(matches[3] || 0);
+  const seconds = parseInt(matches[4] || 0);
 
-  return hours * 60 + minutes + Math.ceil(seconds / 60);
+  return daysPart * 1440 + hours * 60 + minutes + Math.ceil(seconds / 60);
 }
 
 /**

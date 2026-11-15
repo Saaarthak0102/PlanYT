@@ -24,6 +24,13 @@ Just open YouTube and follow your plan.
 
 ---
 
+## What's New in v1.4
+
+- **Plans home + dashboard:** the popup opens on your plan list with **+ Add plan** in the header. Opening a plan shows a progress donut, Days left / Videos done / Watch time left, a **Start / Continue Day N** button (opens the right video on YouTube) and the day list.
+- **Today's checklist on YouTube:** the playlist sidebar widget now shows today's videos with checkboxes and a "Mark today as completed" box.
+- **Playlist highlighting:** completed videos are tinted red in YouTube's playlist panel; partially watched split videos are tinted proportionally.
+- **Fixes:** progress is now weighted by watch time and calculated in one shared module, stale legacy storage no longer overwrites progress, backend keeps playlist order and handles day-long durations.
+
 ## What's New in v1.3
 
 ### Per-Video Sub-Checkboxes (Major Update)

@@ -10,10 +10,9 @@
   const CONFIG = {
     WIDGET_ID: 'planyt-progress-widget-container',
     WIDGET_HOST_ID: 'planyt-progress-widget-host',
-    SIDEBAR_SELECTOR: 'ytd-playlist-panel-renderer',
     SECONDARY_SELECTOR: '#secondary',
     CHECK_INTERVAL: 300,
-    MAX_INIT_ATTEMPTS: 15,
+    MAX_INIT_ATTEMPTS: 30,
     UPDATE_DEBOUNCE: 200,
     STORAGE_KEY: 'playlistPlans'
   };
@@ -54,8 +53,8 @@
           console.warn('PlanYT: Could not remove stale widget', err);
         }
 
-        const playlistPanel = await waitForSidebar();
-        if (!playlistPanel) {
+        const hostSpot = await waitForHost();
+        if (!hostSpot) {
           console.warn('PlanYT: Playlist sidebar not found');
           return;
         }
@@ -72,11 +71,11 @@
           return;
         }
 
-        const referenceElement = playlistPanel.querySelector('#header-description');
+        const playlistPanel = hostSpot.parent;
 
         try {
-          if (referenceElement && referenceElement.parentNode === playlistPanel) {
-            playlistPanel.insertBefore(widget, referenceElement);
+          if (hostSpot.before && hostSpot.before.parentNode === playlistPanel) {
+            playlistPanel.insertBefore(widget, hostSpot.before);
           } else {
             playlistPanel.appendChild(widget);
           }
@@ -99,11 +98,58 @@
     return STATE.activeInjectionPromise;
   }
 
-  async function waitForSidebar(maxAttempts = CONFIG.MAX_INIT_ATTEMPTS) {
+  // Decide where the widget goes for the current page type.
+  // Returns { parent, before } or null if the page isn't ready yet.
+  function findHost() {
+    const isPlaylistListing = window.location.pathname === '/playlist';
+
+    if (isPlaylistListing) {
+      // /playlist?list=… : the legacy sidebar/header elements are empty & hidden in the
+      // new layout, so only use a candidate if it is actually visible.
+      const isVisible = (el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 150 && r.height > 20;
+      };
+      // Current layout: right under the Play / Comments button row of the playlist header
+      const playMenu = document.querySelector(
+        'ytd-browse[page-subtype="playlist"] ytd-playlist-header-renderer .play-menu');
+      if (playMenu && playMenu.isConnected && isVisible(playMenu) && playMenu.parentElement) {
+        return { parent: playMenu.parentElement, before: playMenu.nextElementSibling };
+      }
+
+      const sidebar = document.querySelector('ytd-browse[page-subtype="playlist"] ytd-playlist-sidebar-renderer');
+      if (sidebar && sidebar.isConnected && isVisible(sidebar)) {
+        const items = sidebar.querySelector('#items') || sidebar;
+        const primary = items.querySelector('ytd-playlist-sidebar-primary-info-renderer');
+        const before = primary && primary.parentNode === items ? primary.nextElementSibling : null;
+        return { parent: items, before };
+      }
+
+      // New layout: top of the video-list column, above the first video
+      const listColumn = document.querySelector(
+        'ytd-browse[page-subtype="playlist"] ytd-two-column-browse-results-renderer #primary');
+      if (listColumn && listColumn.isConnected && listColumn.firstElementChild) {
+        return { parent: listColumn, before: listColumn.firstElementChild };
+      }
+      return null;
+    }
+
+    // /watch?v=…&list=… : playlist panel in the secondary column
+    const panel =
+      document.querySelector('ytd-watch-flexy ytd-playlist-panel-renderer') ||
+      document.querySelector('ytd-playlist-panel-renderer');
+    if (panel && panel.isConnected) {
+      const ref = panel.querySelector('#header-description');
+      return { parent: panel, before: ref && ref.parentNode === panel ? ref : null };
+    }
+    return null;
+  }
+
+  async function waitForHost(maxAttempts = CONFIG.MAX_INIT_ATTEMPTS) {
     for (let i = 0; i < maxAttempts; i++) {
-      const sidebar = document.querySelector(CONFIG.SIDEBAR_SELECTOR);
-      if (sidebar && sidebar.isConnected) {
-        return sidebar;
+      const spot = findHost();
+      if (spot) {
+        return spot;
       }
 
       await new Promise((resolve) => setTimeout(resolve, CONFIG.CHECK_INTERVAL));
@@ -180,14 +226,14 @@
         return;
       }
 
-      const progress = deriveProgressFromPlan(plan.planData || []);
+      const progress = PlanYTProgress.derive(plan.planData || []);
 
       if (progress.totalDays === 0) {
         renderEmptyState(container, 'Plan this playlist with PlanYT');
         return;
       }
 
-      if (progress.percent === 100 && progress.completedDays === progress.totalDays) {
+      if (progress.completedDays === progress.totalDays) {
         renderCompletedState(container);
       } else {
         renderActivePlan(container, plan, progress);
@@ -200,18 +246,8 @@
 
   function renderEmptyState(container, message = 'Plan this playlist with PlanYT') {
     container.innerHTML = `
-      <div class="container">
-        <section class="section section-compact">
-          <h3 class="plans-title">Plan Progress</h3>
-          <div class="progress-hero progress-hero-empty">
-            <div class="progress-hero-percent">${message}</div>
-            <div class="progress-hero-subtext">Create a plan in PlanYT to track progress</div>
-          </div>
-
-          <div class="plans-footer">
-            <button class="btn btn-secondary" id="planyt-empty-cta">Create Plan</button>
-          </div>
-        </section>
+      <div class="cta-only">
+        <button class="btn btn-secondary" id="planyt-empty-cta" title="${escapeHtml(message)}">Create Plan</button>
       </div>
     `;
 
@@ -223,18 +259,8 @@
 
   function renderCompletedState(container) {
     container.innerHTML = `
-      <div class="container">
-        <section class="section section-compact">
-          <h3 class="plans-title">Plan Progress</h3>
-          <div class="progress-hero progress-hero-complete">
-            <div class="progress-hero-percent">Playlist Completed</div>
-            <div class="progress-hero-subtext">Great job! You've finished this playlist.</div>
-          </div>
-
-          <div class="plans-footer">
-            <button class="btn btn-secondary" id="planyt-view-cta">View Plan</button>
-          </div>
-        </section>
+      <div class="cta-only">
+        <button class="btn btn-secondary" id="planyt-view-cta" title="Playlist completed">View Plan</button>
       </div>
     `;
 
@@ -244,14 +270,33 @@
     }
   }
 
-  function renderActivePlan(container, plan, progress) {
-    const todayTarget = getTodayTarget(plan.planData || [], progress.currentDay);
-    const daysRemaining = calculateDaysRemaining(progress.currentDay, progress.totalDays);
-    const minutesRemaining = calculateRemainingMinutes(plan.planData || [], progress.currentDay);
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
-    const todayStatus = todayTarget.completed ? 'completed' : '';
-    const todayLabel = todayTarget.completed ? "Today's target completed ✓" : `${todayTarget.videosCount} video${todayTarget.videosCount !== 1 ? 's' : ''}`;
-    const todayTime = formatMinutes(todayTarget.totalMinutes);
+  function renderActivePlan(container, plan, progress) {
+    const planData = plan.planData || [];
+    const dayIndex = PlanYTProgress.currentDayIndex(planData);
+    const day = planData[dayIndex];
+    const playlistId = STATE.currentPlaylistId;
+    const fmt = PlanYTProgress.formatMinutes;
+
+    const segmentsHtml = (day.videos || []).map((seg, i) => {
+      const url = PlanYTProgress.segmentUrl(seg, playlistId);
+      const range = seg.isPartial
+        ? `${fmt(seg.startTime || 0)} – ${seg.endTime ? fmt(seg.endTime) : 'end'}`
+        : '';
+      return `
+        <label class="today-item ${seg.completed ? 'done' : ''}">
+          <input type="checkbox" class="seg-check" data-seg="${i}" ${seg.completed ? 'checked' : ''}>
+          <span class="today-item-text">
+            <a class="today-item-title" href="${escapeHtml(url || '#')}">${escapeHtml(seg.title)}</a>
+            <span class="today-item-meta">${fmt(seg.duration)}${range ? ' · ' + range : ''}</span>
+          </span>
+        </label>`;
+    }).join('');
 
     container.innerHTML = `
       <div class="container">
@@ -264,19 +309,16 @@
             </div>
           </div>
 
-          <div class="meta-list" id="progressSection">
-            <div class="meta-row">
-              <span class="meta-label">Today</span>
-              <span class="meta-value ${todayStatus}">${todayLabel}</span>
+          <div class="today-card">
+            <div class="today-head">
+              <span class="today-title">Today · Day ${day.day}</span>
+              <span class="today-time">${fmt(day.totalTime)}</span>
             </div>
-            <div class="meta-row">
-              <span class="meta-label">Remaining</span>
-              <span class="meta-value">${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}</span>
-            </div>
-            <div class="meta-row">
-              <span class="meta-label">Watch time</span>
-              <span class="meta-value">${todayTime || formatMinutes(minutesRemaining)}</span>
-            </div>
+            <div class="today-list">${segmentsHtml}</div>
+            ${plan.mode === 'video-by-video' ? '' : `<label class="today-all">
+              <input type="checkbox" id="planyt-day-check" ${day.completed ? 'checked' : ''}>
+              <span>Mark today as completed</span>
+            </label>`}
           </div>
 
           <div class="plans-footer">
@@ -286,24 +328,31 @@
       </div>
     `;
 
-    const btn = container.querySelector('#planyt-open-cta');
-    if (btn) {
-      btn.addEventListener('click', () => openPlanYTPopup('open'));
+    const openBtn = container.querySelector('#planyt-open-cta');
+    if (openBtn) {
+      openBtn.addEventListener('click', () => openPlanYTPopup('open'));
+    }
+
+    container.querySelectorAll('.seg-check').forEach(box => {
+      box.addEventListener('change', () => {
+        const segIndex = parseInt(box.dataset.seg, 10);
+        updatePlanForPlaylist(playlistId, (pd) =>
+          PlanYTProgress.setSegmentCompleted(pd, dayIndex, segIndex, box.checked));
+      });
+    });
+
+    const dayBox = container.querySelector('#planyt-day-check');
+    if (dayBox) {
+      dayBox.addEventListener('change', () => {
+        updatePlanForPlaylist(playlistId, (pd) =>
+          PlanYTProgress.setDayCompleted(pd, dayIndex, dayBox.checked));
+      });
     }
   }
 
   async function getPlansFromStorage() {
-    return new Promise((resolve) => {
-      chrome.storage.local.get([CONFIG.STORAGE_KEY], (result) => {
-        if (chrome.runtime.lastError) {
-          console.warn('PlanYT widget: Storage error', chrome.runtime.lastError);
-          resolve({ plans: [] });
-        } else {
-          const data = result[CONFIG.STORAGE_KEY] || { plans: [], activePlanId: null };
-          resolve(data.plans || []);
-        }
-      });
-    });
+    const data = await readPlansData();
+    return data.plans || [];
   }
 
   function setupStorageListener() {
@@ -370,18 +419,6 @@
     }
   }
 
-  function openPlanYTPopup() {
-    // Backwards-compatible simple open
-    chrome.runtime.sendMessage(
-      { type: 'OPEN_PLANYT_POPUP' },
-      () => {
-        if (chrome.runtime.lastError) {
-          console.warn('PlanYT widget: Error opening popup', chrome.runtime.lastError);
-        }
-      }
-    );
-  }
-
   function openPlanYTPopup(action) {
     // action: 'open' -> open existing plan; 'create' -> create new plan for current playlist
     const playlistId = extractPlaylistIdFromPage();
@@ -414,6 +451,7 @@
       return;
     }
 
+    STATE.currentPlaylistId = extractPlaylistIdFromPage();
     await injectWidgetSafely();
     await renderWidget();
   }
@@ -540,53 +578,93 @@
         border-radius: 2px;
       }
 
-      .meta-list {
+      .today-card {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: var(--yt-radius-md);
+        padding: var(--yt-space-sm) var(--yt-space-md);
+      }
+
+      .today-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: var(--yt-space-xs);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .today-time {
+        color: var(--yt-text-tertiary);
+        font-size: 12px;
+      }
+
+      .today-list {
         display: flex;
         flex-direction: column;
-        gap: var(--yt-space-xs);
-        margin-top: var(--yt-space-sm);
+        gap: 2px;
+        max-height: 180px;
+        overflow-y: auto;
       }
 
-      .meta-row {
+      .today-item,
+      .today-all {
         display: flex;
-        align-items: baseline;
-        justify-content: space-between;
+        align-items: flex-start;
         gap: var(--yt-space-sm);
-        padding: 0;
-        min-height: 0;
+        padding: 4px 0;
+        cursor: pointer;
       }
 
-      .meta-label {
-        font-weight: 500;
-        color: var(--yt-text-secondary);
-        font-size: 13px;
+      .today-item input,
+      .today-all input {
+        accent-color: var(--yt-accent);
+        margin-top: 2px;
+        cursor: pointer;
       }
 
-      .meta-value {
-        font-weight: 500;
+      .today-item-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .today-item-title {
         color: var(--yt-text-primary);
+        text-decoration: none;
         font-size: 13px;
-        text-align: right;
-      }
-
-      .meta-value.completed {
-        color: var(--yt-success);
-      }
-
-      .progress-section {
-        margin-top: var(--yt-space-xs);
-      }
-
-      .progress-bar-container {
-        width: 100%;
-        height: 4px;
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .today-item-title:hover {
+        text-decoration: underline;
+      }
+
+      .today-item.done .today-item-title {
+        text-decoration: line-through;
+        color: var(--yt-text-tertiary);
+      }
+
+      .today-item-meta {
+        font-size: 11px;
+        color: var(--yt-text-tertiary);
+      }
+
+      .today-all {
+        margin-top: var(--yt-space-xs);
+        padding-top: var(--yt-space-sm);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .cta-only {
+        padding: var(--yt-space-sm) 0;
       }
 
       .plans-footer {
-        margin-top: var(--yt-space-xs);
+        margin-top: var(--yt-space-md);
         margin-bottom: var(--yt-space-md);
       }
 
@@ -644,15 +722,6 @@
           font-size: 18px;
         }
 
-        .meta-row {
-          align-items: flex-start;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .meta-value {
-          text-align: left;
-        }
       }
     `;
   }
