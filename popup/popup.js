@@ -706,7 +706,11 @@ function renderDashboard() {
 
   // Donut
   const circumference = 2 * Math.PI * 50;
-  elements.donutFill.setAttribute('stroke-dasharray', `${(progress.percent / 100) * circumference} ${circumference}`);
+  const filled = (progress.percent / 100) * circumference;
+  // Inline style (not the SVG attribute) so it overrides the .donut-fill CSS default
+  elements.donutFill.style.strokeDasharray = `${filled} ${circumference}`;
+  // Avoid a stray round-cap dot when nothing is done yet
+  elements.donutFill.style.opacity = progress.percent > 0 ? '1' : '0';
   elements.donutPercent.textContent = progress.percent + '%';
 
   // Stats
